@@ -4,6 +4,7 @@ release_date = "2026-04-23"
 last_updated = "2026-04-30"
 attachment = true
 reasoning = true
+reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high", "xhigh"] }]
 temperature = false
 tool_call = true
 structured_output = true
@@ -15,7 +16,8 @@ input = 5.00
 output = 30.00
 cache_read = 0.50
 
-[cost.context_over_200k]
+[[cost.tiers]]
+tier = { size = 272_000 }
 input = 10.00
 output = 45.00
 cache_read = 1.00

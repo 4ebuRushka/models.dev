@@ -1,7 +1,0 @@
-name = "Xiaomi: MiMo-V2-Flash"
-
-[extends]
-from = "xiaomi/mimo-v2-flash"
-
-[interleaved]
-field = "reasoning_details"

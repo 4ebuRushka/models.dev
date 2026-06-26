@@ -1,10 +1,13 @@
-[extends]
-from = "deepseek/deepseek-v4-pro"
+base_model = "deepseek/deepseek-v4-pro"
+reasoning_options = [{ type = "toggle" }, { type = "effort", values = ["low", "medium", "high", "xhigh"] }]
+
+[interleaved]
+field = "reasoning_content"
 
 [cost]
-input = 1.74
-output = 3.48
-cache_read = 0.145
+input = 1.69
+output = 3.38
+cache_read = 0.13
 
 [limit]
 context = 1_048_576

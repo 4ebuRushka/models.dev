@@ -1,9 +1,10 @@
 name = "gpt-oss-20b"
 family = "gpt-oss"
-release_date = "2024-12-01"
-last_updated = "2024-12-01"
+release_date = "2025-08-05"
+last_updated = "2025-08-05"
 attachment = false
-reasoning = false
+reasoning = true
+reasoning_options = [{ type = "effort", values = ["low", "medium", "high"] }]
 temperature = true
 tool_call = true
 structured_output = true
@@ -15,7 +16,7 @@ output = 0.30
 
 [limit]
 context = 128_000
-output = 4_096
+output = 16_384
 
 [modalities]
 input = ["text"]

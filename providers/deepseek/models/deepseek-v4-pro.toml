@@ -10,13 +10,20 @@ tool_call = true
 structured_output = true
 open_weights = true
 
+[[reasoning_options]]
+type = "toggle"
+
+[[reasoning_options]]
+type = "effort"
+values = ["high", "max"]
+
 [interleaved]
 field = "reasoning_content"
 
 [cost]
-input = 1.74
-output = 3.48
-cache_read = 0.145
+input = 0.435
+output = 0.87
+cache_read = 0.003625
 
 [limit]
 context = 1_000_000
