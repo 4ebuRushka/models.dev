@@ -7,6 +7,7 @@ import { AuthoredModel, AuthoredModelShape, ModelMetadata } from "../schema.js";
 import { baseten } from "./providers/baseten.js";
 import { chutes } from "./providers/chutes.js";
 import { cloudflareWorkersAi } from "./providers/cloudflare-workers-ai.js";
+import { crossmodel } from "./providers/crossmodel.js";
 import { deepinfra } from "./providers/deepinfra.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
@@ -87,6 +88,7 @@ export const providers: {
   baseten: SyncProvider<any>;
   chutes: SyncProvider<any>;
   "cloudflare-workers-ai": SyncProvider<any>;
+  crossmodel: SyncProvider<any>;
   deepinfra: SyncProvider<any>;
   google: SyncProvider<any>;
   huggingface: SyncProvider<any>;
@@ -100,6 +102,7 @@ export const providers: {
   baseten,
   chutes,
   "cloudflare-workers-ai": cloudflareWorkersAi,
+  crossmodel,
   deepinfra,
   google,
   huggingface,
@@ -112,7 +115,7 @@ export const providers: {
 };
 
 export const groups = {
-  aggregators: ["huggingface", "llmgateway", "openrouter", "vercel"],
+  aggregators: ["crossmodel", "huggingface", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
   direct: ["baseten", "chutes", "deepinfra", "google", "ovhcloud", "venice", "xai"],
 } as const;
