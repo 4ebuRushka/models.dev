@@ -200,6 +200,7 @@ test("preserves the authored header comment block when rewriting a changed model
         id: model.id,
         model: {
           name: "Example Model",
+          description: "Example model used to verify sync formatting behavior",
           release_date: "2026-01-01",
           last_updated: "2026-01-01",
           attachment: false,

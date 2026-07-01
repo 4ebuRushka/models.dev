@@ -11,6 +11,7 @@ import {
   booleanText,
   capabilitySummary,
   costSummary,
+  escapeHtml,
   formatNumber,
   knowledgeText,
   renderModalityIcon,
@@ -34,6 +35,17 @@ const LabLogoSvgs = new Map<string, string>();
 type CatalogModel = ModelMetadata;
 type CatalogProvider = Provider;
 type CatalogProviderModel = Model;
+type ActiveSection = "models" | "providers" | "labs";
+
+interface PageMetadata {
+  title: string;
+  description: string;
+}
+
+interface RenderedPage {
+  html: string;
+  metadata: PageMetadata;
+}
 
 interface ProviderModelEntry {
   providerId: string;
@@ -97,6 +109,12 @@ const LAB_NAME_OVERRIDES: Record<string, string> = {
   zhipuai: "Zhipu AI",
 };
 
+const DEFAULT_PAGE_METADATA: PageMetadata = {
+  title: "Models.dev - An open-source database of AI models",
+  description:
+    "Models.dev is a comprehensive open-source database of AI model specifications, pricing, and features.",
+};
+
 const ModelEntries = buildModelEntries();
 const ProviderModelEntries = buildProviderModelEntries(ModelEntries);
 connectProviderEntries(ModelEntries, ProviderModelEntries);
@@ -108,7 +126,7 @@ const SearchItems = buildSearchItems(
 );
 
 export const RenderedPages = buildPages();
-export const Rendered = RenderedPages.get("/")!;
+export const Rendered = RenderedPages.get("/")!.html;
 
 export function normalizeRoute(pathname: string) {
   if (pathname !== "/" && pathname.endsWith("/")) {
@@ -119,6 +137,13 @@ export function normalizeRoute(pathname: string) {
 
 export function getRenderedPage(pathname: string) {
   return RenderedPages.get(normalizeRoute(pathname));
+}
+
+export function renderDocument(template: string, page: RenderedPage) {
+  return template
+    .replaceAll("__PAGE_TITLE__", escapeHtml(page.metadata.title))
+    .replaceAll("__PAGE_DESCRIPTION__", escapeHtml(page.metadata.description))
+    .replace("<!--static-->", page.html);
 }
 
 async function loadProviderBaseModelRefs(root: string) {
@@ -382,14 +407,14 @@ function resolveCanonicalModelId(
 }
 
 function buildPages() {
-  const pages = new Map<string, string>();
+  const pages = new Map<string, RenderedPage>();
   const modelList = sortModels([...ModelEntries.values()]);
   const providerList = Object.entries(Providers).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name),
   );
 
-  const addPage = (route: string, body: string) => {
-    pages.set(normalizeRoute(route), body);
+  const addPage = (route: string, page: RenderedPage) => {
+    pages.set(normalizeRoute(route), page);
   };
 
   const home = renderPage(
@@ -406,7 +431,10 @@ function buildPages() {
   addPage("/labs", renderPage("labs", <LabsPage labs={LabEntries} />));
 
   for (const model of modelList) {
-    addPage(modelHref(model.id), renderPage("models", <ModelPage model={model} />));
+    addPage(
+      modelHref(model.id),
+      renderPage("models", <ModelPage model={model} />, modelPageMetadata(model)),
+    );
   }
 
   for (const [providerId, provider] of providerList) {
@@ -418,30 +446,174 @@ function buildPages() {
       renderPage(
         "providers",
         <ProviderPage providerId={providerId} provider={provider} models={models} />,
+        providerPageMetadata(providerId, provider, models),
       ),
     );
   }
 
   for (const lab of LabEntries) {
-    addPage(labHref(lab.id), renderPage("labs", <LabPage lab={lab} />));
+    addPage(labHref(lab.id), renderPage("labs", <LabPage lab={lab} />, labPageMetadata(lab)));
   }
 
   return pages;
 }
 
-function renderPage(active: "models" | "providers" | "labs", content: unknown) {
-  return renderToString(
-    <Fragment>
-      <Header active={active} />
-      <main class="page-scroll">{content}</main>
-      <MobileMenu active={active} />
-      <SearchDialog items={SearchItems} />
-      <HelpDialog />
-    </Fragment>,
-  );
+function renderPage(
+  active: ActiveSection,
+  content: unknown,
+  metadata: PageMetadata = DEFAULT_PAGE_METADATA,
+): RenderedPage {
+  return {
+    html: renderToString(
+      <Fragment>
+        <Header active={active} />
+        <main class="page-scroll">{content}</main>
+        <MobileMenu active={active} />
+        <SearchDialog items={SearchItems} />
+        <HelpDialog />
+      </Fragment>,
+    ),
+    metadata,
+  };
 }
 
-function Header(props: { active: "models" | "providers" | "labs" }) {
+function modelPageMetadata(model: ModelEntry): PageMetadata {
+  const metadata = model.metadata;
+  const providerCount = model.providers.length;
+  const title = `${metadata.name} pricing, providers, and specs | Models.dev`;
+  const context = metadata.limit?.context
+    ? `${formatNumber(metadata.limit.context)} token context`
+    : undefined;
+  const output = metadata.limit?.output
+    ? `${formatNumber(metadata.limit.output)} token output`
+    : undefined;
+  const cost =
+    model.minInputCost !== undefined || model.minOutputCost !== undefined
+      ? `${costSummary(model.minInputCost, model.minOutputCost)} per 1M tokens`
+      : undefined;
+  const capabilities = capabilitySummary([
+    ["tool calling", metadata.tool_call],
+    ["reasoning", metadata.reasoning],
+    ["structured output", metadata.structured_output],
+    ["temperature control", metadata.temperature],
+  ]);
+  const modalities = modalitySummary(metadata.modalities?.input, metadata.modalities?.output);
+  const description = compactMetadataDescription(
+    [
+      metadata.description,
+      `Compare ${metadata.name} from ${model.labName} across ${plural(providerCount, "provider")}.`,
+      factSentence(
+        [context, output, cost, modalities, capabilities !== "-" ? capabilities : undefined],
+        "Specs include",
+      ),
+    ],
+    280,
+  );
+
+  return { title, description };
+}
+
+function providerPageMetadata(
+  providerId: string,
+  provider: CatalogProvider,
+  models: ProviderModelEntry[],
+): PageMetadata {
+  const title = `${provider.name} models, pricing, and API docs | Models.dev`;
+  const labs = new Set<string>();
+  for (const entry of models) {
+    if (entry.canonical?.labName) labs.add(entry.canonical.labName);
+  }
+  const labNames = [...labs];
+  const labSummary =
+    labNames.length > 1
+      ? `models from labs like ${labNames.slice(0, 3).join(", ")}`
+      : labNames.length === 1 && labNames[0] !== provider.name
+        ? `models from ${labNames[0]}`
+        : undefined;
+  const description = compactMetadataDescription(
+    [
+      `Browse ${plural(models.length, `${provider.name} model`)} on Models.dev.`,
+      factSentence([
+        labSummary,
+        `pricing`,
+        `context windows`,
+        `capabilities`,
+        `SDK package ${provider.npm}`,
+        provider.api ? `API endpoint and docs` : `provider docs`,
+      ]),
+      `Provider ID: ${providerId}.`,
+    ],
+    280,
+  );
+
+  return { title, description };
+}
+
+function labPageMetadata(lab: LabEntry): PageMetadata {
+  const title = `${lab.name} models, providers, and specs | Models.dev`;
+  const description = compactMetadataDescription(
+    [
+      lab.description,
+      `Browse ${plural(lab.models.length, "model")} from ${lab.name} across ${plural(lab.providerCount, "provider")}.`,
+      factSentence([
+        lab.families.length > 0 ? `families like ${lab.families.slice(0, 4).join(", ")}` : undefined,
+        lab.lastUpdated ? `updated ${lab.lastUpdated}` : undefined,
+        `pricing`,
+        `context windows`,
+        `capabilities`,
+      ]),
+    ],
+    280,
+  );
+
+  return { title, description };
+}
+
+function compactMetadataDescription(parts: Array<string | undefined>, maxLength: number) {
+  const compacted = parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .map(ensureSentence)
+    .join(" ");
+
+  if (compacted.length <= maxLength) return compacted;
+
+  const shortened = compacted.slice(0, maxLength - 1);
+  const lastBreak = Math.max(
+    shortened.lastIndexOf("."),
+    shortened.lastIndexOf(";"),
+    shortened.lastIndexOf(","),
+  );
+  const trimmed = (lastBreak > maxLength * 0.6 ? shortened.slice(0, lastBreak) : shortened).trim();
+  return `${trimmed.replace(/[.,;:]$/, "")}.`;
+}
+
+function ensureSentence(value: string) {
+  return /[.!?]$/.test(value) ? value : `${value}.`;
+}
+
+function sentenceList(values: Array<string | undefined>) {
+  const parts = values.filter((value): value is string => Boolean(value));
+  if (parts.length === 0) return undefined;
+  return parts.join("; ");
+}
+
+function factSentence(values: Array<string | undefined>, prefix = "Includes") {
+  const list = sentenceList(values);
+  return list ? `${prefix} ${list}` : undefined;
+}
+
+function modalitySummary(input?: string[], output?: string[]) {
+  const inputText = input && input.length > 0 ? `input: ${input.join(", ")}` : undefined;
+  const outputText = output && output.length > 0 ? `output: ${output.join(", ")}` : undefined;
+  return sentenceList([inputText, outputText]);
+}
+
+function plural(count: number, singular: string, pluralForm = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : pluralForm}`;
+}
+
+function Header(props: { active: ActiveSection }) {
   return (
     <header>
       <div class="left">
