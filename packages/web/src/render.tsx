@@ -5,7 +5,7 @@ import { generateCatalog } from "models.dev";
 import type { Model, ModelMetadata, Provider } from "models.dev";
 import { Fragment } from "hono/jsx";
 import { renderToString } from "hono/jsx/dom/server";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import path from "path";
 import {
   booleanText,
@@ -27,6 +27,7 @@ export const Models = Catalog.models;
 export const Providers = Catalog.providers;
 
 const BaseModelRefs = await loadProviderBaseModelRefs(root);
+const LabMetadata = loadLabMetadata(root);
 const ProviderLogoSvgs = new Map<string, string>();
 const LabLogoSvgs = new Map<string, string>();
 
@@ -56,6 +57,7 @@ interface ModelEntry {
 interface LabEntry {
   id: string;
   name: string;
+  description?: string;
   models: ModelEntry[];
   providerCount: number;
   families: string[];
@@ -257,6 +259,7 @@ function buildLabEntries(models: Map<string, ModelEntry>) {
       return {
         id,
         name: labName(id),
+        description: LabMetadata.get(id)?.description,
         models: sortModels(modelEntries),
         providerCount: providers.size,
         families: [...families].sort(),
@@ -349,9 +352,11 @@ function buildSearchItems(
       modelCount: lab.models.length,
       providerCount: lab.providerCount,
       releaseDate: lab.lastReleased,
+      description: lab.description,
       updated: lab.lastUpdated,
       tokens: [
         lab.name,
+        lab.description,
         lab.id,
         lab.lastUpdated,
         ...lab.families,
@@ -603,11 +608,12 @@ function ProvidersPage(props: { providers: Array<[string, CatalogProvider]> }) {
 
 function LabsPage(props: { labs: LabEntry[] }) {
   return (
-      <TableSection title="Labs" count={props.labs.length} columns={4} hideHeading>
+      <TableSection title="Labs" count={props.labs.length} columns={5} hideHeading>
         <table data-enhanced-table>
           <thead>
             <tr>
               <SortableTh>Lab</SortableTh>
+              <SortableTh>Description</SortableTh>
               <SortableTh type="number">Models</SortableTh>
               <SortableTh type="number">Providers</SortableTh>
               <SortableTh>Last Updated</SortableTh>
@@ -615,17 +621,18 @@ function LabsPage(props: { labs: LabEntry[] }) {
           </thead>
           <tbody>
             {props.labs.map((lab) => (
-              <tr data-search={`${lab.name} ${lab.id} ${lab.families.join(" ")}`}>
+              <tr data-search={`${lab.name} ${lab.description ?? ""} ${lab.id} ${lab.families.join(" ")}`}>
                 <td data-sort={lab.name}>
                   <LabLink labId={lab.id} labName={lab.name} />
                   <span class="subtle mono">{lab.id}</span>
                 </td>
+                <td>{lab.description ?? "-"}</td>
                 <td data-sort={String(lab.models.length)}>{lab.models.length}</td>
                 <td data-sort={String(lab.providerCount)}>{lab.providerCount}</td>
                 <td data-sort={sortDate(lab.lastUpdated)}>{lab.lastUpdated ?? "-"}</td>
               </tr>
             ))}
-            <EmptyRow columns={4} />
+            <EmptyRow columns={5} />
           </tbody>
         </table>
       </TableSection>
@@ -726,6 +733,7 @@ function LabPage(props: { lab: LabEntry }) {
       <DetailHeader
         eyebrow={<a href="/labs">Labs</a>}
         title={props.lab.name}
+        description={props.lab.description}
         code={props.lab.id}
         copyValue={props.lab.id}
       />
@@ -1413,6 +1421,32 @@ function countLinkedProviderEntries() {
   return ProviderModelEntries.filter(
     (entry) => entry.canonicalModelId !== undefined,
   ).length;
+}
+
+function loadLabMetadata(root: string) {
+  const result = new Map<string, { description?: string }>();
+  const labsPath = path.join(root, "labs");
+  if (!existsSync(labsPath)) return result;
+
+  for (const labId of readdirSync(labsPath)) {
+    const metadataPath = path.join(labsPath, labId, "lab.toml");
+    if (!existsSync(metadataPath)) continue;
+
+    const metadata = Bun.TOML.parse(readFileSync(metadataPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    if (
+      metadata.description !== undefined &&
+      (typeof metadata.description !== "string" || metadata.description.length === 0)
+    ) {
+      throw new Error(`Invalid lab description in ${metadataPath}`);
+    }
+
+    result.set(labId, { description: metadata.description });
+  }
+
+  return result;
 }
 
 function minDefined(values: Array<number | undefined>) {
