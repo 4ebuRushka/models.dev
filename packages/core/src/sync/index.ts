@@ -63,7 +63,10 @@ export interface SyncProvider<SourceModel> {
   parseModels(raw: unknown): SourceModel[];
   translateModel(
     model: SourceModel,
-    context: { existing(id: string): ExistingModel | undefined },
+    context: {
+      existing(id: string): ExistingModel | undefined;
+      authored(id: string): ExistingModel | undefined;
+    },
   ): { id: string; model: SyncedModel; metadata?: { id: string; model: SyncedMetadata } } | undefined;
 }
 
@@ -141,6 +144,9 @@ export async function syncProvider<SourceModel>(
       existing(id) {
         return existing.get(`${id}.toml`)?.toml;
       },
+      authored(id) {
+        return existing.get(`${id}.toml`)?.authored;
+      },
     });
     if (translated === undefined) {
       if (provider.sourceID !== undefined) skippedRemote.push(provider.sourceID(sourceModel));
@@ -205,7 +211,7 @@ export async function syncProvider<SourceModel>(
 
     desired.set(relativePath, {
       model: parsed.data,
-      content: formatToml(parsed.data),
+      content: (existing.get(relativePath)?.header ?? "") + formatToml(parsed.data),
     });
   }
 
@@ -216,10 +222,11 @@ export async function syncProvider<SourceModel>(
   for (const [relativePath, file] of desiredMetadata) {
     const filePath = path.join(metadataDir, relativePath);
     const currentFile = Bun.file(filePath);
-    const current = await currentFile.exists()
+    const currentText = await currentFile.exists() ? await currentFile.text() : undefined;
+    const current = currentText !== undefined
       ? ModelMetadata.safeParse({
           id: relativePath.slice(0, -5),
-          ...Bun.TOML.parse(await currentFile.text()) as Record<string, unknown>,
+          ...Bun.TOML.parse(currentText) as Record<string, unknown>,
         })
       : undefined;
     if (current?.success && stable(current.data) === stable(file.model)) continue;
@@ -228,7 +235,7 @@ export async function syncProvider<SourceModel>(
       console.log(`Would ${current === undefined ? "create" : "update"} metadata ${relativePath}`);
     } else {
       await mkdir(path.dirname(filePath), { recursive: true });
-      await Bun.write(filePath, file.content);
+      await Bun.write(filePath, (currentText !== undefined ? leadingComments(currentText) : "") + file.content);
     }
   }
 
@@ -394,6 +401,7 @@ async function readExisting(modelsDir: string) {
   const existing = new Map<string, {
     authored: ExistingModel;
     toml: ExistingModel;
+    header: string;
     symlink: boolean;
   }>();
   const brokenSymlinks = new Set<string>();
@@ -425,7 +433,7 @@ async function readExisting(modelsDir: string) {
       ? authored
       : resolveBaseModel(authored, modelMetadata ?? {}, filePath);
 
-    existing.set(file, { authored, toml, symlink });
+    existing.set(file, { authored, toml, header: leadingComments(text), symlink });
   }
 
   return { models: existing, brokenSymlinks, modelMetadata };
@@ -673,6 +681,23 @@ async function writeReport(target: string, results: SyncResult[]) {
 
 function quote(value: string) {
   return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+// Preserve the leading comment block (header) authored at the top of a TOML file.
+// `Bun.TOML.parse` discards comments, so the serializer must re-attach them or
+// every rewrite would silently delete hand-authored documentation.
+function leadingComments(text: string) {
+  const header: string[] = [];
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed === "" || trimmed.startsWith("#")) {
+      header.push(line);
+    } else {
+      break;
+    }
+  }
+  while (header.length > 0 && header[header.length - 1]?.trim() === "") header.pop();
+  return header.length > 0 ? `${header.join("\n")}\n` : "";
 }
 
 function formatInteger(n: number) {

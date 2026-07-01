@@ -8,7 +8,6 @@ import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "
 
 const API_ENDPOINT = "https://openrouter.ai/api/v1/models";
 const MODELS_DIR = path.join(import.meta.dirname, "..", "..", "..", "..", "..", "models");
-const MODEL_NAME_BLACKLIST = ["fable-5"];
 const modelMetadataByID = new Map<string, Record<string, unknown>>();
 const modelMetadataFilesByProvider = new Map<string, Set<string>>();
 
@@ -92,18 +91,32 @@ export const openrouter = {
     return response.json();
   },
   parseModels(raw) {
-    return OpenRouterResponse.parse(raw).data.filter((model) => {
-      const name = `${model.id} ${model.name}`.toLowerCase();
-      return MODEL_NAME_BLACKLIST.every((value) => !name.includes(value));
-    });
+    return OpenRouterResponse.parse(raw).data;
   },
   translateModel(model, context) {
+    // OpenRouter serves deprecated/unavailable routes as degraded stubs:
+    // negative pricing (`"-1"`) and an empty `supported_parameters` array. Syncing
+    // those would wrongly flip `reasoning`/`tool_call`/`structured_output` to false
+    // and strip `reasoning_options`. Leave the authored file untouched instead, and
+    // skip the model entirely when we have nothing to preserve.
+    if (isUnavailable(model)) {
+      const authored = context.authored(model.id);
+      return authored === undefined ? undefined : { id: model.id, model: authored as SyncedModel };
+    }
     return {
       id: model.id,
       model: buildOpenRouterModel(model, context.existing(model.id)),
     };
   },
 } satisfies SyncProvider<OpenRouterModel>;
+
+function isUnavailable(model: OpenRouterModel) {
+  return (
+    model.supported_parameters.length === 0 ||
+    Number(model.pricing.prompt) < 0 ||
+    Number(model.pricing.completion) < 0
+  );
+}
 
 function dateFromTimestamp(timestamp: number) {
   return new Date(timestamp * 1000).toISOString().slice(0, 10);
