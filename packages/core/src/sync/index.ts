@@ -715,6 +715,7 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
     lines.push(`base_model_omit = [${model.base_model_omit.map(quote).join(", ")}]`);
   }
   if (model.name !== undefined) lines.push(`name = ${quote(model.name)}`);
+  if (model.description !== undefined) lines.push(`description = ${quote(model.description)}`);
   if (model.family !== undefined) lines.push(`family = ${quote(model.family)}`);
   if (model.release_date !== undefined) lines.push(`release_date = ${quote(model.release_date)}`);
   if (model.last_updated !== undefined) lines.push(`last_updated = ${quote(model.last_updated)}`);

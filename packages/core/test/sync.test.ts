@@ -7,6 +7,7 @@ test("formats interleaved as a root field before reasoning option tables", () =>
   const content = formatToml({
     id: "example/model",
     name: "Example Model",
+    description: "Example model for sync formatting regression tests",
     release_date: "2026-01-01",
     last_updated: "2026-01-01",
     attachment: false,
@@ -30,6 +31,7 @@ test("formats empty reasoning options outside the interleaved table", () => {
   const content = formatToml({
     id: "example/model",
     name: "Example Model",
+    description: "Example model for sync formatting regression tests",
     release_date: "2026-01-01",
     last_updated: "2026-01-01",
     attachment: false,
@@ -53,6 +55,7 @@ test("formats reasoning efforts from lowest to highest", () => {
   const content = formatToml({
     id: "example/model",
     name: "Example Model",
+    description: "Example model for sync formatting regression tests",
     release_date: "2026-01-01",
     last_updated: "2026-01-01",
     attachment: false,
@@ -104,6 +107,7 @@ test("preserves authored OpenRouter reasoning options over model metadata", () =
     },
   }), {
     name: "Claude Sonnet 5",
+    description: "Balanced Claude model for coding and agentic workflows",
     release_date: "2026-06-30",
     last_updated: "2026-06-30",
     attachment: true,
@@ -129,6 +133,7 @@ test("upgrades empty OpenRouter reasoning options from model metadata", () => {
     },
   }), {
     name: "Claude Sonnet 5",
+    description: "Balanced Claude model for coding and agentic workflows",
     release_date: "2026-06-30",
     last_updated: "2026-06-30",
     attachment: true,

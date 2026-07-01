@@ -2,6 +2,7 @@ import { z } from "zod";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
+import { describeModel } from "../../describe.js";
 import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
 
@@ -191,6 +192,17 @@ export function buildOpenRouterModel(
       canonical,
       {
         name: baseModel !== undefined || model.id.endsWith(":free") ? name : undefined,
+        description: existing?.description ?? describeModel({
+          id: model.id,
+          name,
+          family: familyValue,
+          reasoning,
+          tool_call: toolCall,
+          structured_output: structuredOutput,
+          open_weights: openWeights,
+          limit,
+          modalities: { input, output },
+        }),
         attachment,
         reasoning,
         reasoning_options,
@@ -210,6 +222,17 @@ export function buildOpenRouterModel(
 
   return {
     name,
+    description: existing?.description ?? describeModel({
+      id: model.id,
+      name,
+      family: familyValue,
+      reasoning,
+      tool_call: toolCall,
+      structured_output: structuredOutput,
+      open_weights: openWeights,
+      limit,
+      modalities: { input, output },
+    }),
     family: familyValue,
     release_date: releaseDate,
     last_updated: releaseDate,

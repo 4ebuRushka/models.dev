@@ -1,4 +1,5 @@
 name = "Claude Sonnet 5"
+description = "Everyday Claude agent model for coding, planning, browsing, and general work"
 family = "claude-sonnet"
 release_date = "2026-06-30"
 last_updated = "2026-06-30"

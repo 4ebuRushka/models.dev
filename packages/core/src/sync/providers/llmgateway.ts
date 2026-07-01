@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { describeModel } from "../../describe.js";
 import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
 import { factorBaseModel } from "./openrouter.js";
@@ -150,6 +151,17 @@ function buildLLMGatewayModel(
       existing.base_model,
       {
         attachment: existing.attachment,
+        description: existing.description ?? describeModel({
+          id: model.id,
+          name: existing.name ?? model.name,
+          family: existing.family,
+          reasoning: existing.reasoning,
+          tool_call: existing.tool_call,
+          structured_output: existing.structured_output,
+          open_weights: existing.open_weights,
+          limit,
+          modalities: existing.modalities,
+        }),
         reasoning: existing.reasoning,
         temperature: existing.temperature,
         tool_call: existing.tool_call,
@@ -170,6 +182,17 @@ function buildLLMGatewayModel(
   if (existing !== undefined) {
     return {
       name: existing.name ?? model.name,
+      description: existing.description ?? describeModel({
+        id: model.id,
+        name: existing.name ?? model.name,
+        family: existing.family,
+        reasoning: existing.reasoning,
+        tool_call: existing.tool_call,
+        structured_output: existing.structured_output,
+        open_weights: existing.open_weights,
+        limit,
+        modalities: existing.modalities ?? defaultModalities(model),
+      }),
       family: existing.family,
       release_date: existing.release_date ?? dateFromTimestamp(model.created),
       last_updated: existing.last_updated ?? dateFromTimestamp(model.created),
@@ -193,6 +216,18 @@ function buildLLMGatewayModel(
   const { input, output } = defaultModalities(model);
   return {
     name: model.name,
+    description: describeModel({
+      id: model.id,
+      name: model.name,
+      family: inferFamily(model, model.name),
+      reasoning,
+      tool_call: model.supported_parameters.includes("tools")
+        || model.supported_parameters.includes("tool_choice"),
+      structured_output: model.structured_outputs ?? false,
+      open_weights: false,
+      limit,
+      modalities: { input, output },
+    }),
     family: inferFamily(model, model.name),
     release_date: dateFromTimestamp(model.created),
     last_updated: dateFromTimestamp(model.created),

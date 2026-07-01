@@ -77,6 +77,7 @@ interface SearchIndexItem {
   releaseDate?: string;
   inputCost?: number;
   outputCost?: number;
+  description?: string;
   npm?: string;
   api?: string;
   updated?: string;
@@ -287,9 +288,11 @@ function buildSearchItems(
       releaseDate: metadata.release_date,
       inputCost: model.minInputCost,
       outputCost: model.minOutputCost,
+      description: metadata.description,
       updated: metadata.last_updated,
       tokens: [
         metadata.name,
+        metadata.description,
         model.id,
         model.labName,
         model.labId,
@@ -644,6 +647,7 @@ function ModelPage(props: { model: ModelEntry }) {
           </Fragment>
         }
         title={metadata.name}
+        description={metadata.description}
         code={model.id}
         copyValue={model.id}
       />
@@ -763,6 +767,7 @@ function Overview(props: {
 function DetailHeader(props: {
   eyebrow: unknown;
   title: string;
+  description?: string;
   code: string;
   copyValue: string;
 }) {
@@ -770,6 +775,7 @@ function DetailHeader(props: {
     <section class="detail-header">
       <div class="breadcrumbs">{props.eyebrow}</div>
       <h2>{props.title}</h2>
+      {props.description && <p>{props.description}</p>}
       <div class="code-line">
         <code>{props.code}</code>
         <CopyButton value={props.copyValue} label={`Copy ${props.code}`} />
@@ -845,7 +851,7 @@ function ModelTable(props: {
 
             return (
               <tr
-                data-search={`${metadata.name} ${model.id} ${model.labName} ${metadata.family ?? ""} ${weightsText(metadata.open_weights)} ${booleanText(metadata.reasoning)} ${booleanText(metadata.tool_call)} ${booleanText(metadata.structured_output)} ${booleanText(metadata.temperature)}`}
+                data-search={`${metadata.name} ${metadata.description} ${model.id} ${model.labName} ${metadata.family ?? ""} ${weightsText(metadata.open_weights)} ${booleanText(metadata.reasoning)} ${booleanText(metadata.tool_call)} ${booleanText(metadata.structured_output)} ${booleanText(metadata.temperature)}`}
               >
                 <td data-sort={metadata.name}>
                   <a class="primary-link" href={modelHref(model.id)}>
@@ -950,7 +956,7 @@ function ProviderModelsTable(props: {
 
           return (
             <tr
-              data-search={`${displayName} ${entry.modelId} ${entry.provider.name} ${entry.providerId} ${lab?.name ?? ""} ${entry.model.family ?? ""} ${booleanText(entry.model.reasoning)} ${booleanText(entry.model.tool_call)} ${booleanText(entry.model.structured_output)} ${booleanText(entry.model.temperature)}`}
+              data-search={`${displayName} ${entry.model.description} ${entry.modelId} ${entry.provider.name} ${entry.providerId} ${lab?.name ?? ""} ${entry.model.family ?? ""} ${booleanText(entry.model.reasoning)} ${booleanText(entry.model.tool_call)} ${booleanText(entry.model.structured_output)} ${booleanText(entry.model.temperature)}`}
             >
               {props.mode === "model" ? (
                 <td data-sort={entry.provider.name}>
