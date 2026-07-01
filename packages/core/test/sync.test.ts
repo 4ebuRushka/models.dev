@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
-import { formatToml, preserveReasoningOptions } from "../src/sync/index.js";
-import { buildOpenRouterModel, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
+import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
+import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 
 test("formats interleaved as a root field before reasoning option tables", () => {
   const content = formatToml({
@@ -147,6 +150,113 @@ test("upgrades empty OpenRouter reasoning options from model metadata", () => {
     ],
   });
 });
+
+test("preserves the authored header comment block when rewriting a changed model", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-header-"));
+  const modelsDir = path.join(dir, "providers", "example", "models");
+  await Bun.write(path.join(modelsDir, "example-model.toml"), [
+    "# Documented quirk: this route needs a manual note.",
+    "# https://example.com/docs (accessed 2026-06-25)",
+    'name = "Example Model"',
+    'release_date = "2026-01-01"',
+    'last_updated = "2026-01-01"',
+    "attachment = false",
+    "reasoning = false",
+    "tool_call = true",
+    "open_weights = false",
+    "",
+    "[cost]",
+    "input = 1",
+    "output = 2",
+    "",
+    "[limit]",
+    "context = 1_000",
+    "output = 100",
+    "",
+    "[modalities]",
+    'input = ["text"]',
+    'output = ["text"]',
+    "",
+  ].join("\n"));
+
+  const provider: SyncProvider<{ id: string }> = {
+    id: "example",
+    name: "Example",
+    modelsDir,
+    deleteMissing: false,
+    async fetchModels() {
+      return [{ id: "example-model" }];
+    },
+    parseModels(raw) {
+      return raw as { id: string }[];
+    },
+    translateModel(model) {
+      return {
+        id: model.id,
+        model: {
+          name: "Example Model",
+          release_date: "2026-01-01",
+          last_updated: "2026-01-01",
+          attachment: false,
+          reasoning: false,
+          tool_call: true,
+          open_weights: false,
+          cost: { input: 3, output: 9 },
+          limit: { context: 1_000, output: 100 },
+          modalities: { input: ["text"], output: ["text"] },
+        },
+      };
+    },
+  };
+
+  try {
+    const result = await syncProvider(provider);
+    expect(result.updated).toBe(1);
+    const written = await readFile(path.join(modelsDir, "example-model.toml"), "utf8");
+    expect(written).toStartWith(
+      "# Documented quirk: this route needs a manual note.\n# https://example.com/docs (accessed 2026-06-25)\n",
+    );
+    expect(written).toContain("input = 3");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("retains authored data when OpenRouter reports an unavailable stub", () => {
+  const authored = {
+    name: "Claude Fable Latest",
+    reasoning: true as const,
+    reasoning_options: [{ type: "effort" as const, values: ["low", "high"] as const }],
+    tool_call: true as const,
+    structured_output: true as const,
+  };
+  const translated = openrouter.translateModel(unavailableStub(), {
+    existing: () => undefined,
+    authored: () => authored as never,
+  });
+
+  expect(translated).toEqual({ id: "~anthropic/claude-fable-latest", model: authored as never });
+});
+
+test("skips an unavailable OpenRouter stub with no authored file", () => {
+  const translated = openrouter.translateModel(unavailableStub(), {
+    existing: () => undefined,
+    authored: () => undefined,
+  });
+
+  expect(translated).toBeUndefined();
+});
+
+function unavailableStub(): OpenRouterModel {
+  return openRouterModel({
+    id: "~anthropic/claude-fable-latest",
+    name: "Anthropic: Claude Fable Latest",
+    supported_parameters: [],
+    pricing: { prompt: "-1", completion: "-1" },
+    reasoning: { mandatory: true },
+    top_provider: { context_length: null, max_completion_tokens: null },
+  });
+}
 
 function openRouterModel(overrides: Partial<OpenRouterModel> = {}): OpenRouterModel {
   return {
