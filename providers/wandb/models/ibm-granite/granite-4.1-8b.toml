@@ -1,4 +1,5 @@
 name = "Granite 4.1 8B"
+description = "IBM Granite model for enterprise chat, tool use, and text generation"
 family = "granite"
 release_date = "2026-04-29"
 last_updated = "2026-04-29"

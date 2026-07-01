@@ -1,4 +1,5 @@
 name = "Mellum2 12B A2.5B"
+description = "JetBrains Mellum model for code completion, infilling, and developer tooling"
 family = "jamba"
 release_date = "2026-06-01"
 last_updated = "2026-06-01"

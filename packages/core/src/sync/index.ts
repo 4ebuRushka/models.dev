@@ -201,10 +201,13 @@ export async function syncProvider<SourceModel>(
     }
     const parsed = SyncedAuthoredModel.safeParse(stripUndefined({
       id: translated.id,
-      ...preserveReasoningOptions(
-        translatedModel,
+      ...preserveDescription(
+        preserveReasoningOptions(
+          translatedModel,
+          existing.get(relativePath)?.authored,
+          resolvedReasoning,
+        ),
         existing.get(relativePath)?.authored,
-        resolvedReasoning,
       ),
     }));
     if (!parsed.success) {
@@ -350,6 +353,12 @@ export function preserveBaseModel(model: SyncedModel, existing: ExistingModel | 
     base_model: existing.base_model,
     base_model_omit: existing.base_model_omit,
   };
+}
+
+export function preserveDescription(model: SyncedModel, existing: ExistingModel | undefined): SyncedModel {
+  if (model.description !== undefined) return model;
+  if (existing?.description === undefined) return model;
+  return { ...model, description: existing.description } as SyncedModel;
 }
 
 export function preserveReasoningOptions(
