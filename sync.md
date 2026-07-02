@@ -14,6 +14,7 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync cloudflare` syncs the Cloudflare sync group.
 - `bun models:sync direct` syncs every provider in the `direct` group.
 - `bun models:sync google` syncs only Google.
+- `bun models:sync xai` syncs only xAI.
 - `bun models:sync kilo` syncs only Kilo.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
