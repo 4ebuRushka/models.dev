@@ -3,31 +3,16 @@ import { z } from "zod";
 import { describeModel } from "../../describe.js";
 import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
-import { factorBaseModel, findCanonicalBaseModel } from "./openrouter.js";
+import { factorBaseModel, resolveCanonicalBaseModel } from "./openrouter.js";
 
 const API_ENDPOINT = "https://api.llmgateway.io/v1/models";
 
-// LLM Gateway reports the originating lab in `family`. Map those labs onto the
-// canonical `models/` metadata namespaces so brand-new models can inherit the
-// reviewed capability/modality facts through `base_model` instead of shipping a
-// noisy standalone definition. `provider` selects the ID normalization rules,
-// `metadata` names the directory the base entry lives in.
-const CANONICAL_FAMILIES: Record<string, { provider: string; metadata: string }> = {
-  alibaba: { provider: "alibaba", metadata: "alibaba" },
-  anthropic: { provider: "anthropic", metadata: "anthropic" },
-  deepseek: { provider: "deepseek", metadata: "deepseek" },
-  google: { provider: "google", metadata: "google" },
-  meta: { provider: "llama", metadata: "meta" },
-  minimax: { provider: "minimax", metadata: "minimax" },
-  mistral: { provider: "mistral", metadata: "mistral" },
-  moonshot: { provider: "moonshotai", metadata: "moonshotai" },
-  nvidia: { provider: "nvidia", metadata: "nvidia" },
-  openai: { provider: "openai", metadata: "openai" },
-  perplexity: { provider: "perplexity", metadata: "perplexity" },
-  sakana: { provider: "sakana", metadata: "sakana" },
-  xai: { provider: "xai", metadata: "xai" },
-  xiaomi: { provider: "xiaomi", metadata: "xiaomi" },
-  zai: { provider: "zai", metadata: "zhipuai" },
+// LLM Gateway names the originating lab in `family`; most already match the
+// canonical prefixes understood by resolveCanonicalBaseModel. Alias the few that
+// spell the lab differently. (Mirrors huggingface's CANONICAL_ORG_PREFIXES.)
+const CANONICAL_FAMILY_ALIASES: Record<string, string> = {
+  mistral: "mistralai",
+  moonshot: "moonshotai",
 };
 
 const Pricing = z.object({
@@ -117,10 +102,10 @@ function modalities(values: string[], fallback: Modality[]): Modality[] {
   return [...new Set(result.length > 0 ? result : fallback)];
 }
 
-function resolveCanonicalBaseModel(model: LLMGatewayModel) {
-  const canonical = model.family === undefined ? undefined : CANONICAL_FAMILIES[model.family];
-  if (canonical === undefined) return undefined;
-  return findCanonicalBaseModel(canonical.provider, canonical.metadata, model.id);
+function resolveLLMGatewayBaseModel(model: LLMGatewayModel) {
+  if (model.family === undefined) return undefined;
+  const prefix = CANONICAL_FAMILY_ALIASES[model.family] ?? model.family;
+  return resolveCanonicalBaseModel(`${prefix}/${model.id}`);
 }
 
 function inferFamily(model: LLMGatewayModel, name: string) {
@@ -242,10 +227,11 @@ export function buildLLMGatewayModel(
 
   // Brand-new model with a reviewed metadata entry: factor it against the
   // canonical base so capability, modality, and description facts inherit from
-  // the curated `models/` file. Only the gateway-authoritative cost and served
-  // context are overridden; the gateway's capability/modality data is too noisy
-  // to author standalone.
-  const canonical = resolveCanonicalBaseModel(model);
+  // the curated `models/` file. The gateway serves bare IDs and names the lab in
+  // `family`, so glue them into the prefixed form the shared resolver expects.
+  // Only the gateway-authoritative cost and served context are overridden; the
+  // gateway's capability/modality data is too noisy to author standalone.
+  const canonical = resolveLLMGatewayBaseModel(model);
   if (canonical !== undefined) {
     const factoredLimit = { context, input: undefined, output: undefined };
     return factorBaseModel(canonical, { limit: factoredLimit, cost }, factoredLimit);
