@@ -14,7 +14,7 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync cloudflare` syncs the Cloudflare sync group.
 - `bun models:sync direct` syncs every provider in the `direct` group.
 - `bun models:sync google` syncs only Google.
-- `bun models:sync xai` syncs only xAI.
+- `bun models:sync kilo` syncs only Kilo.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
 - `bun validate` validates the generated catalog after a sync.
@@ -122,6 +122,19 @@ OpenRouter is implemented in `packages/core/src/sync/providers/openrouter.ts`.
 - `structured_output` comes from `supported_parameters.includes("structured_outputs")` only.
 - Existing `status`, `interleaved`, `knowledge`, `limit.input`, and `cost.tiers` may be preserved when OpenRouter is not authoritative enough for those fields.
 - Canonical OpenRouter model IDs should emit `base_model` references to model metadata when a matching `models/` entry exists.
+
+## Kilo Gateway Notes
+
+Kilo Gateway is implemented in `packages/core/src/sync/providers/kilo.ts`.
+
+- Source endpoint: `https://api.kilo.ai/api/gateway/models`.
+- Optional auth: `KILO_API_KEY`.
+- Model IDs map directly to TOML paths under `providers/kilo/models`.
+- API prices are per-token strings and are converted to per-1M-token numbers.
+- `structured_output` comes from `supported_parameters.includes("structured_outputs")` only.
+- Existing `status`, `interleaved`, `knowledge`, `limit.input`, and `cost.tiers` may be preserved when Kilo is not authoritative enough for those fields.
+- Canonical Kilo model IDs should emit `base_model` references to model metadata when a matching `models/` entry exists.
+- `reasoning_options` is derived from `opencode.variants` when present.
 
 ## Cloudflare Workers AI Notes
 

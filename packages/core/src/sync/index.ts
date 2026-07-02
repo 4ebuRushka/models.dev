@@ -9,6 +9,7 @@ import { chutes } from "./providers/chutes.js";
 import { cloudflareWorkersAi } from "./providers/cloudflare-workers-ai.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
+import { kilo } from "./providers/kilo.js";
 import { llmgateway } from "./providers/llmgateway.js";
 import { openrouter } from "./providers/openrouter.js";
 import { ovhcloud } from "./providers/ovhcloud.js";
@@ -87,6 +88,7 @@ export const providers: {
   chutes: SyncProvider<any>;
   "cloudflare-workers-ai": SyncProvider<any>;
   google: SyncProvider<any>;
+  kilo: SyncProvider<any>;
   huggingface: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
   openrouter: SyncProvider<any>;
@@ -99,6 +101,7 @@ export const providers: {
   chutes,
   "cloudflare-workers-ai": cloudflareWorkersAi,
   google,
+  kilo,
   huggingface,
   llmgateway,
   openrouter,
@@ -109,7 +112,7 @@ export const providers: {
 };
 
 export const groups = {
-  aggregators: ["huggingface", "llmgateway", "openrouter", "vercel"],
+  aggregators: ["huggingface", "kilo", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
   direct: ["baseten", "chutes", "google", "ovhcloud", "venice", "xai"],
 } as const;
