@@ -1,6 +1,6 @@
 base_model = "minimax/MiniMax-M2.5"
 name = "MiniMax M2.5"
-description = "MiniMax model for chat, coding, office work, and agentic tasks"
+description = "MiniMax M2.5 is a Mixture-of-Experts (MoE) model featuring 230 billion total parameters and 10 billion active parameters per token during inference. This highly sparse architecture allows for high-throughput and low-latency with strong coding capabilities."
 family = "minimax-m2.5"
 structured_output = true
 reasoning_options = []

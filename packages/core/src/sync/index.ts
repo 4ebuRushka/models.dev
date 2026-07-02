@@ -692,7 +692,12 @@ async function writeReport(target: string, results: SyncResult[]) {
 }
 
 function quote(value: string) {
-  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  return `"${value
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"')
+    .replaceAll("\n", "\\n")
+    .replaceAll("\r", "\\r")
+    .replaceAll("\t", "\\t")}"`;
 }
 
 // Preserve the leading comment block (header) authored at the top of a TOML file.

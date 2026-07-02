@@ -1,5 +1,5 @@
 name = "Granite 4.1 8B"
-description = "IBM Granite model for enterprise chat, tool use, and text generation"
+description = "Granite 4.1 8B is a long-context instruct model finetuned with an enhanced post-training pipeline resulting in enhanced tool calling, instruction following, and chat capabilities."
 family = "granite"
 release_date = "2026-04-29"
 last_updated = "2026-04-29"

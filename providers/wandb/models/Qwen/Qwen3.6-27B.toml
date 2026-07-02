@@ -1,4 +1,5 @@
 base_model = "alibaba/qwen3.6-27b"
+description = "Qwen3.6-27B is a 27B dense multimodal model with a 262K native context window. As the flagship of the Qwen3.6 family, it delivers top-tier performance in agentic coding, STEM reasoning, and vision-language tasks."
 family = "qwen3.6"
 reasoning_options = []
 

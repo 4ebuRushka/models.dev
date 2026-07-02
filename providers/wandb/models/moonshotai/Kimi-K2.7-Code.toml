@@ -1,4 +1,5 @@
 base_model = "moonshotai/kimi-k2.7-code"
+description = "Kimi K2.7 Code is a 1T-parameter MoE model with 32B active parameters and a 262k context window. Built on Kimi K2.6, it is purpose-built for complex, real-world software engineering workflows, delivering strong end-to-end task completion on long-horizon agentic coding tasks while cutting thinking-token usage by ~30% over its predecessor."
 attachment = false
 temperature = true
 reasoning_options = []

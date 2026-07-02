@@ -1,5 +1,6 @@
 base_model = "nvidia/nemotron-3-super-120b-a12b"
 name = "Nemotron 3 Super"
+description = "Nemotron 3 is a LatentMoE model designed to deliver strong agentic, reasoning, and conversational capabilities. It is optimized for high-volume workloads such as IT ticket automation."
 structured_output = true
 reasoning_options = []
 

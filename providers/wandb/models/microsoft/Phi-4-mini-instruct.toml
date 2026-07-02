@@ -1,5 +1,5 @@
 name = "Phi 4 Mini 3.8B"
-description = "Efficient model for low-latency assistance, extraction, and routine automation"
+description = "Phi 4 Mini is optimized for use in lightweight environments, excelling at quick interactions, and constrained-resource deployments. It supports strong mathematical and logical inference, suitable for embedded applications, mobile environments, or real-time AI assistants."
 family = "phi"
 release_date = "2025-02-01"
 last_updated = "2025-02-01"

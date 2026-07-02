@@ -1,6 +1,6 @@
 base_model = "meta/llama-3.3-70b-instruct"
 name = "Llama 3.3 70B"
-description = "Open Llama instruction model for multilingual chat, reasoning, and coding"
+description = "Llama 3.3 70B excels in multilingual conversational interactions, providing strong capabilities in detailed instruction-following, coding tasks, and mathematical reasoning. Ideal for general-purpose chatbots, complex text-based queries, and multilingual user interactions."
 release_date = "2024-12-01"
 last_updated = "2024-12-01"
 attachment = false

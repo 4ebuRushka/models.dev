@@ -1,5 +1,5 @@
 name = "DeepSeek V3.1"
-description = "DeepSeek chat model for instruction following, coding, and analysis"
+description = "DeepSeek-V3.1 is a large hybrid reasoning model (671B parameters, 37B active) that supports both thinking and non-thinking modes via prompt templates. It extends the DeepSeek-V3 base with a two-phase long-context training process, reaching up to 128K tokens, and uses FP8 microscaling for efficient inference. The model improves code generation, and reasoning efficiency, achieving performance comparable to DeepSeek R1-0528 on difficult benchmarks while responding more quickly. It is suitable for research, coding, and agentic workflows. It succeeds the DeepSeek V3-0324 model and performs well on a variety of tasks."
 family = "deepseek"
 release_date = "2025-08-21"
 last_updated = "2025-08-21"

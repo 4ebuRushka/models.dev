@@ -1,5 +1,5 @@
 base_model = "moonshotai/kimi-k2.5"
-description = "Kimi multimodal agent model for visual understanding, coding, and planning"
+description = "Kimi K2.5 is a multimodal Mixture-of-Experts language model featuring 32 billion activated parameters and a total of 1 trillion parameters. It has been optimized for agentic use cases and excels at reasoning and coding tasks. We serve NVIDIA's Blackwell-optimized model."
 release_date = "2026-02-02"
 last_updated = "2026-02-02"
 attachment = true

@@ -1,5 +1,5 @@
 name = "gpt-oss-20b"
-description = "Open-weight GPT model for self-hosted reasoning and instruction-following workloads"
+description = "GPT OSS 20B is an open-weight 21B parameter model released by OpenAI. It uses a Mixture-of-Experts (MoE) architecture with 3.6B active parameters per forward pass, optimized for lower-latency inference. The model is trained in OpenAI’s Harmony response format and supports reasoning level configuration and structured outputs."
 family = "gpt-oss"
 release_date = "2025-08-05"
 last_updated = "2025-08-05"

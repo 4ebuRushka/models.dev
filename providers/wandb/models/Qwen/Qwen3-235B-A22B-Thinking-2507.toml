@@ -1,6 +1,6 @@
 base_model = "alibaba/qwen3-235b-a22b"
 name = "Qwen3 235B A22B Thinking-2507"
-description = "Qwen reasoning model for deliberate problem solving, math, and coding"
+description = "Qwen3-235B-A22B-Thinking-2507 is a high-performance, open-weight Mixture-of-Experts (MoE) language model optimized for complex reasoning tasks. It activates 22B of its 235B parameters per forward pass. This \"thinking-only\" variant enhances structured logical reasoning, mathematics, science, and long-form generation, showing strong benchmark performance across AIME, SuperGPQA, LiveCodeBench, and MMLU-Redux. It enforces a special reasoning mode (</think>) and is designed for high-token outputs in challenging domains.\nThe model is instruction-tuned and excels at step-by-step reasoning, tool use, agentic workflows, and multilingual tasks. This release represents the most capable open-source variant in the Qwen3-235B series, surpassing many closed models in structured reasoning use cases as of July 2025."
 release_date = "2025-07-25"
 last_updated = "2025-07-25"
 structured_output = true

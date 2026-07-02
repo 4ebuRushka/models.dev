@@ -1,5 +1,6 @@
 base_model = "google/gemma-4-31b-it"
 name = "Gemma 4 31B"
+description = "Gemma 4 31B Dense is the strongest Gemma 4 model best for advanced reasoning, agentic workflows, code generation, vision, and longer context and is natively trained on 140+ languages."
 reasoning_options = []
 
 [cost]

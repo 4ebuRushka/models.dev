@@ -33,6 +33,7 @@ const WandbModalities = z.object({
 export const WandbModel = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string().optional(),
   attachment: z.boolean(),
   reasoning: z.boolean(),
   tool_call: z.boolean(),
@@ -145,6 +146,7 @@ export function buildWandbModel(
   };
   const synced: SyncedFullModel = {
     name: normalizeName(model),
+    description: model.description ?? existing?.description,
     family: resolveFamily(model),
     attachment: model.attachment,
     reasoning: model.reasoning,

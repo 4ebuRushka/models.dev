@@ -1,4 +1,5 @@
 base_model = "moonshotai/kimi-k2.6"
+description = "Kimi K2.6 is a multimodal Mixture-of-Experts language model featuring 32 billion activated parameters and a total of 1 trillion parameters optimized for large-scale agentic and coding tasks. We serve an optimized version of this model that has achieved comparable scores on Terminal-Bench 2.0."
 release_date = "2026-04-20"
 last_updated = "2026-04-20"
 reasoning_options = []

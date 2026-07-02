@@ -1,5 +1,6 @@
 base_model = "alibaba/qwen3.5-35b-a3b"
 name = "Qwen3.5-35B-A3B"
+description = "Qwen3.5-35B-A3B is a multimodal mixture-of-experts model built for fast, efficient inference across chat, reasoning, coding, agents, and vision-language workloads. With 35B total parameters, 3B active parameters, a 262,144-token context window, and support for 201 languages and dialects, it’s a strong choice for production applications that need long context and broad multimodal capability."
 family = "qwen3.5"
 release_date = "2026-02-24"
 last_updated = "2026-02-24"
