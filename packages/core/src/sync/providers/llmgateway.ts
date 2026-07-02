@@ -3,9 +3,17 @@ import { z } from "zod";
 import { describeModel } from "../../describe.js";
 import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
-import { factorBaseModel } from "./openrouter.js";
+import { factorBaseModel, resolveCanonicalBaseModel } from "./openrouter.js";
 
 const API_ENDPOINT = "https://api.llmgateway.io/v1/models";
+
+// LLM Gateway names the originating lab in `family`; most already match the
+// canonical prefixes understood by resolveCanonicalBaseModel. Alias the few that
+// spell the lab differently. (Mirrors huggingface's CANONICAL_ORG_PREFIXES.)
+const CANONICAL_FAMILY_ALIASES: Record<string, string> = {
+  mistral: "mistralai",
+  moonshot: "moonshotai",
+};
 
 const Pricing = z.object({
   prompt: z.string().optional(),
@@ -94,6 +102,12 @@ function modalities(values: string[], fallback: Modality[]): Modality[] {
   return [...new Set(result.length > 0 ? result : fallback)];
 }
 
+function resolveLLMGatewayBaseModel(model: LLMGatewayModel) {
+  if (model.family === undefined) return undefined;
+  const prefix = CANONICAL_FAMILY_ALIASES[model.family] ?? model.family;
+  return resolveCanonicalBaseModel(`${prefix}/${model.id}`);
+}
+
 function inferFamily(model: LLMGatewayModel, name: string) {
   const kimiFamily = inferKimiFamily(model.id, name);
   if (kimiFamily !== undefined) return kimiFamily;
@@ -110,7 +124,7 @@ function inferFamily(model: LLMGatewayModel, name: string) {
     });
 }
 
-function buildLLMGatewayModel(
+export function buildLLMGatewayModel(
   model: LLMGatewayModel,
   existing: ExistingModel | undefined,
 ): SyncedModel {
@@ -209,6 +223,18 @@ function buildLLMGatewayModel(
       limit,
       modalities: existing.modalities ?? defaultModalities(model),
     } satisfies SyncedFullModel;
+  }
+
+  // Brand-new model with a reviewed metadata entry: factor it against the
+  // canonical base so capability, modality, and description facts inherit from
+  // the curated `models/` file. The gateway serves bare IDs and names the lab in
+  // `family`, so glue them into the prefixed form the shared resolver expects.
+  // Only the gateway-authoritative cost and served context are overridden; the
+  // gateway's capability/modality data is too noisy to author standalone.
+  const canonical = resolveLLMGatewayBaseModel(model);
+  if (canonical !== undefined) {
+    const factoredLimit = { context, input: undefined, output: undefined };
+    return factorBaseModel(canonical, { limit: factoredLimit, cost }, factoredLimit);
   }
 
   // Brand-new model: best-effort translation from the gateway. Capability and
