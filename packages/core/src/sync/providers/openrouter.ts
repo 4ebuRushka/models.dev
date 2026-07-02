@@ -296,12 +296,16 @@ export function resolveCanonicalBaseModel(openrouterID: string) {
   if (canonical === undefined) return undefined;
 
   const modelID = modelParts.join("/").replace(/:free$/, "");
-  const candidates = canonicalCandidates(canonical.provider, modelID);
-  const match = candidates.find((candidate) => {
-    return modelMetadataExists(canonical.metadata, candidate);
-  });
+  return findCanonicalBaseModel(canonical.provider, canonical.metadata, modelID);
+}
 
-  return match === undefined ? undefined : `${canonical.metadata}/${match}`;
+// Resolve the `models/<metadata>/<model>.toml` base entry for a bare model ID by
+// probing the naming variants each canonical provider is known to use. `provider`
+// selects the candidate transforms; `metadata` names the directory to look in.
+export function findCanonicalBaseModel(provider: string, metadata: string, modelID: string) {
+  const candidates = canonicalCandidates(provider, modelID);
+  const match = candidates.find((candidate) => modelMetadataExists(metadata, candidate));
+  return match === undefined ? undefined : `${metadata}/${match}`;
 }
 
 function modelMetadataExists(provider: string, modelID: string) {

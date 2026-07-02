@@ -3,9 +3,32 @@ import { z } from "zod";
 import { describeModel } from "../../describe.js";
 import { inferKimiFamily, ModelFamilyValues } from "../../family.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
-import { factorBaseModel } from "./openrouter.js";
+import { factorBaseModel, findCanonicalBaseModel } from "./openrouter.js";
 
 const API_ENDPOINT = "https://api.llmgateway.io/v1/models";
+
+// LLM Gateway reports the originating lab in `family`. Map those labs onto the
+// canonical `models/` metadata namespaces so brand-new models can inherit the
+// reviewed capability/modality facts through `base_model` instead of shipping a
+// noisy standalone definition. `provider` selects the ID normalization rules,
+// `metadata` names the directory the base entry lives in.
+const CANONICAL_FAMILIES: Record<string, { provider: string; metadata: string }> = {
+  alibaba: { provider: "alibaba", metadata: "alibaba" },
+  anthropic: { provider: "anthropic", metadata: "anthropic" },
+  deepseek: { provider: "deepseek", metadata: "deepseek" },
+  google: { provider: "google", metadata: "google" },
+  meta: { provider: "llama", metadata: "meta" },
+  minimax: { provider: "minimax", metadata: "minimax" },
+  mistral: { provider: "mistral", metadata: "mistral" },
+  moonshot: { provider: "moonshotai", metadata: "moonshotai" },
+  nvidia: { provider: "nvidia", metadata: "nvidia" },
+  openai: { provider: "openai", metadata: "openai" },
+  perplexity: { provider: "perplexity", metadata: "perplexity" },
+  sakana: { provider: "sakana", metadata: "sakana" },
+  xai: { provider: "xai", metadata: "xai" },
+  xiaomi: { provider: "xiaomi", metadata: "xiaomi" },
+  zai: { provider: "zai", metadata: "zhipuai" },
+};
 
 const Pricing = z.object({
   prompt: z.string().optional(),
@@ -94,6 +117,12 @@ function modalities(values: string[], fallback: Modality[]): Modality[] {
   return [...new Set(result.length > 0 ? result : fallback)];
 }
 
+function resolveCanonicalBaseModel(model: LLMGatewayModel) {
+  const canonical = model.family === undefined ? undefined : CANONICAL_FAMILIES[model.family];
+  if (canonical === undefined) return undefined;
+  return findCanonicalBaseModel(canonical.provider, canonical.metadata, model.id);
+}
+
 function inferFamily(model: LLMGatewayModel, name: string) {
   const kimiFamily = inferKimiFamily(model.id, name);
   if (kimiFamily !== undefined) return kimiFamily;
@@ -110,7 +139,7 @@ function inferFamily(model: LLMGatewayModel, name: string) {
     });
 }
 
-function buildLLMGatewayModel(
+export function buildLLMGatewayModel(
   model: LLMGatewayModel,
   existing: ExistingModel | undefined,
 ): SyncedModel {
@@ -209,6 +238,17 @@ function buildLLMGatewayModel(
       limit,
       modalities: existing.modalities ?? defaultModalities(model),
     } satisfies SyncedFullModel;
+  }
+
+  // Brand-new model with a reviewed metadata entry: factor it against the
+  // canonical base so capability, modality, and description facts inherit from
+  // the curated `models/` file. Only the gateway-authoritative cost and served
+  // context are overridden; the gateway's capability/modality data is too noisy
+  // to author standalone.
+  const canonical = resolveCanonicalBaseModel(model);
+  if (canonical !== undefined) {
+    const factoredLimit = { context, input: undefined, output: undefined };
+    return factorBaseModel(canonical, { limit: factoredLimit, cost }, factoredLimit);
   }
 
   // Brand-new model: best-effort translation from the gateway. Capability and

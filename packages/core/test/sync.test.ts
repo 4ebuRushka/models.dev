@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
+import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 
 test("formats interleaved as a root field before reasoning option tables", () => {
   const content = formatToml({
@@ -156,6 +157,32 @@ test("upgrades empty OpenRouter reasoning options from model metadata", () => {
   });
 });
 
+test("factors new LLM Gateway models against the canonical base metadata", () => {
+  const model = buildLLMGatewayModel(llmGatewayModel(), undefined);
+
+  expect(model).toEqual({
+    base_model: "anthropic/claude-fable-5",
+    cost: {
+      input: 10,
+      output: 50,
+      cache_read: 1,
+      cache_write: 12.5,
+    },
+  });
+  expect("name" in model).toBe(false);
+  expect("modalities" in model).toBe(false);
+});
+
+test("skips LLM Gateway base_model factoring when no metadata entry exists", () => {
+  const model = buildLLMGatewayModel(
+    llmGatewayModel({ id: "claude-fable-does-not-exist" }),
+    undefined,
+  );
+
+  expect("base_model" in model).toBe(false);
+  expect(model).toMatchObject({ name: "Claude Fable 5" });
+});
+
 test("preserves the authored header comment block when rewriting a changed model", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "sync-header-"));
   const modelsDir = path.join(dir, "providers", "example", "models");
@@ -262,6 +289,30 @@ function unavailableStub(): OpenRouterModel {
     reasoning: { mandatory: true },
     top_provider: { context_length: null, max_completion_tokens: null },
   });
+}
+
+function llmGatewayModel(overrides: Partial<LLMGatewayModel> = {}): LLMGatewayModel {
+  return {
+    id: "claude-fable-5",
+    name: "Claude Fable 5",
+    created: 1_780_963_200,
+    family: "anthropic",
+    architecture: {
+      input_modalities: ["text", "image"],
+      output_modalities: ["text"],
+    },
+    pricing: {
+      prompt: "10.0e-6",
+      completion: "50.0e-6",
+      input_cache_read: "1.0e-6",
+      input_cache_write: "12.5e-6",
+      internal_reasoning: "0",
+    },
+    context_length: 1_000_000,
+    supported_parameters: ["temperature", "max_tokens", "top_p", "effort", "reasoning"],
+    structured_outputs: true,
+    ...overrides,
+  };
 }
 
 function openRouterModel(overrides: Partial<OpenRouterModel> = {}): OpenRouterModel {
