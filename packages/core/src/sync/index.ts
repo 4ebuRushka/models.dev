@@ -735,8 +735,10 @@ function sortReasoningValues(values: Array<string | null>) {
 export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
   const lines: string[] = [];
 
-  if (model.base_model !== undefined) lines.push(`base_model = ${quote(model.base_model)}`);
-  if (model.base_model_omit !== undefined) {
+  if ("base_model" in model && model.base_model !== undefined) {
+    lines.push(`base_model = ${quote(model.base_model)}`);
+  }
+  if ("base_model_omit" in model && model.base_model_omit !== undefined) {
     lines.push(`base_model_omit = [${model.base_model_omit.map(quote).join(", ")}]`);
   }
   if (model.name !== undefined) lines.push(`name = ${quote(model.name)}`);
@@ -781,8 +783,8 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
 
   if (model.cost !== undefined) {
     lines.push("", "[cost]");
-    lines.push(`input = ${formatNumber(model.cost.input)}`);
-    lines.push(`output = ${formatNumber(model.cost.output)}`);
+    if (model.cost.input !== undefined) lines.push(`input = ${formatNumber(model.cost.input)}`);
+    if (model.cost.output !== undefined) lines.push(`output = ${formatNumber(model.cost.output)}`);
     if (model.cost.reasoning !== undefined) {
       lines.push(`reasoning = ${formatNumber(model.cost.reasoning)}`);
     }
@@ -801,9 +803,11 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
 
     for (const tier of model.cost.tiers ?? []) {
       lines.push("", "[[cost.tiers]]");
-      lines.push(`tier = { type = ${quote(tier.tier.type ?? "context")}, size = ${formatInteger(tier.tier.size)} }`);
-      lines.push(`input = ${formatNumber(tier.input)}`);
-      lines.push(`output = ${formatNumber(tier.output)}`);
+      if (tier.tier?.size !== undefined) {
+        lines.push(`tier = { type = ${quote(tier.tier.type ?? "context")}, size = ${formatInteger(tier.tier.size)} }`);
+      }
+      if (tier.input !== undefined) lines.push(`input = ${formatNumber(tier.input)}`);
+      if (tier.output !== undefined) lines.push(`output = ${formatNumber(tier.output)}`);
       if (tier.reasoning !== undefined) lines.push(`reasoning = ${formatNumber(tier.reasoning)}`);
       if (tier.cache_read !== undefined) lines.push(`cache_read = ${formatNumber(tier.cache_read)}`);
       if (tier.cache_write !== undefined) lines.push(`cache_write = ${formatNumber(tier.cache_write)}`);
