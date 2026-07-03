@@ -1,17 +1,8 @@
-name = "GLM-5.2"
-description = "Flagship GLM model for long-horizon reasoning, coding, and agentic engineering"
-family = "glm"
-release_date = "2026-07-02"
-last_updated = "2026-07-02"
-attachment = false
-reasoning = true
+base_model = "zhipuai/glm-5.2"
+
 # NIM Chat schema: `chat_template_kwargs.enable_thinking = true|false`.
 # https://docs.api.nvidia.com/nim/reference/z-ai-glm-5.2-infer
 reasoning_options = [{ type = "toggle" }]
-temperature = true
-tool_call = true
-structured_output = true
-open_weights = true
 
 [interleaved]
 field = "reasoning_content"
@@ -19,11 +10,3 @@ field = "reasoning_content"
 [cost]
 input = 0.0
 output = 0.0
-
-[limit]
-context = 1_000_000
-output = 131_072
-
-[modalities]
-input = ["text"]
-output = ["text"]
