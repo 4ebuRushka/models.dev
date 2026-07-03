@@ -1,4 +1,5 @@
 name = "Step Router v1"
+description = "StepFun routing model that dispatches requests to the appropriate Step model."
 release_date = "2026-05-29"
 last_updated = "2026-05-29"
 attachment = false
