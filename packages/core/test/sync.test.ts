@@ -4,9 +4,99 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
+import {
+  buildAnthropicModel,
+  parseAnthropicPricing,
+  type AnthropicModel,
+} from "../src/sync/providers/anthropic.js";
 import { buildDeepInfraModel, type DeepInfraModel } from "../src/sync/providers/deepinfra.js";
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
+
+function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
+  return {
+    id: "claude-sonnet-5",
+    display_name: "Claude Sonnet 5",
+    created_at: "2026-06-30T00:00:00Z",
+    max_input_tokens: 1_000_000,
+    max_tokens: 128_000,
+    capabilities: {
+      image_input: { supported: true },
+      pdf_input: { supported: true },
+      structured_outputs: { supported: true },
+      thinking: {
+        supported: true,
+        types: { adaptive: { supported: true } },
+      },
+      effort: {
+        supported: true,
+        low: { supported: true },
+        medium: { supported: true },
+        high: { supported: true },
+        xhigh: { supported: true },
+        max: { supported: true },
+      },
+    },
+    ...overrides,
+  };
+}
+
+const anthropicPricingMarkdown = `
+## Model pricing
+
+| Model | Base Input Tokens | 5m Cache Writes | 1h Cache Writes | Cache Hits & Refreshes | Output Tokens |
+| --- | --- | --- | --- | --- | --- |
+| Claude Opus 4.8 | $5 / MTok | $6.25 / MTok | $10 / MTok | $0.50 / MTok | $25 / MTok |
+| Claude Opus 4.1 ([deprecated](/deprecated)) | $15 / MTok | $18.75 / MTok | $30 / MTok | $1.50 / MTok | $75 / MTok |
+| Claude Sonnet 5 [through August 31, 2026](/pricing) | $2 / MTok | $2.50 / MTok | $4 / MTok | $0.20 / MTok | $10 / MTok |
+| Claude Sonnet 5 starting September 1, 2026 | $3 / MTok | $3.75 / MTok | $6 / MTok | $0.30 / MTok | $15 / MTok |
+| Claude Sonnet 4.6 | $3 / MTok | $3.75 / MTok | $6 / MTok | $0.30 / MTok | $15 / MTok |
+| Claude Sonnet 4.5 | $3 / MTok | $3.75 / MTok | $6 / MTok | $0.30 / MTok | $15 / MTok |
+
+## Cloud platform pricing
+`;
+
+test("parses current and future Anthropic pricing rows", () => {
+  const introductory = parseAnthropicPricing(anthropicPricingMarkdown, new Date("2026-07-04T00:00:00Z"));
+  expect(introductory.get("claude sonnet 5")).toMatchObject({
+    input: 2,
+    output: 10,
+    cacheRead: 0.2,
+    cacheWrite: 2.5,
+  });
+  expect(introductory.get("claude opus 4.1")?.deprecated).toBe(true);
+
+  const standard = parseAnthropicPricing(anthropicPricingMarkdown, new Date("2026-09-01T00:00:00Z"));
+  expect(standard.get("claude sonnet 5")).toMatchObject({ input: 3, output: 15 });
+});
+
+test("syncs Anthropic capabilities and exact effort levels", () => {
+  const model = buildAnthropicModel(anthropicModel(), {
+    name: "Claude Sonnet 5",
+    description: "Balanced Claude model for coding and agentic workflows",
+    release_date: "2026-06-30",
+    last_updated: "2026-06-30",
+    attachment: true,
+    reasoning: true,
+    reasoning_options: [{ type: "toggle" }, { type: "budget_tokens", min: 1_024 }],
+    tool_call: true,
+    open_weights: false,
+    cost: { input: 2, output: 10 },
+    limit: { context: 1_000_000, output: 128_000 },
+    modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+  });
+
+  expect(model).toMatchObject({
+    reasoning: true,
+    reasoning_options: [
+      { type: "toggle" },
+      { type: "effort", values: ["low", "medium", "high", "xhigh", "max"] },
+    ],
+    structured_output: true,
+    limit: { context: 1_000_000, output: 128_000 },
+    modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+  });
+});
 
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
   return {
