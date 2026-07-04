@@ -1,4 +1,5 @@
 base_model = "meituan/longcat-2.0"
+# API: {"thinking": {"type": "enabled"}} / {"thinking": {"type": "disabled"}}
 reasoning_options = [{ type = "toggle" }]
 
 [cost]
