@@ -94,6 +94,29 @@ test("DeepInfra excludes incorrectly tagged Gemma 4 audio input", () => {
   });
 });
 
+test("DeepInfra preserves descriptions for standalone models", () => {
+  const model = buildDeepInfraModel(
+    deepInfraModel("example/model", []),
+    {
+      name: "Example Model",
+      description: "Authored standalone model description",
+      release_date: "2026-01-01",
+      last_updated: "2026-01-01",
+      attachment: false,
+      reasoning: false,
+      tool_call: false,
+      open_weights: true,
+      cost: { input: 1, output: 2 },
+      limit: { context: 262_144, output: 8_192 },
+      modalities: { input: ["text"], output: ["text"] },
+    },
+  );
+
+  expect(model).toMatchObject({
+    description: "Authored standalone model description",
+  });
+});
+
 test("formats reasoning efforts from lowest to highest", () => {
   const content = formatToml({
     id: "example/model",

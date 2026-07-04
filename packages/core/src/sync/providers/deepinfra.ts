@@ -321,6 +321,7 @@ export function buildDeepInfraModel(
     // For base_model entries the display name is inherited from `models/`;
     // deriveName is only a fallback for standalone full definitions.
     name: existing?.name ?? (baseModel !== undefined ? undefined : deriveName(model.model_name)),
+    description: existing?.description,
     family: existing?.family,
     release_date: existing?.release_date,
     last_updated: existing?.last_updated,
@@ -354,6 +355,7 @@ export function buildDeepInfraModel(
 
   const required = z.object({
     name: z.string(),
+    description: z.string(),
     release_date: z.string(),
     last_updated: z.string(),
     open_weights: z.boolean(),
