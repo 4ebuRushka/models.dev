@@ -16,7 +16,7 @@ values = ["low", "medium", "high"]
 
 [cost]
 input = 0.039
-output = 0.19
+output = 0.17
 
 [limit]
 context = 131_072
