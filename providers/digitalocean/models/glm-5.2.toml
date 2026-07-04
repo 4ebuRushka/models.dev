@@ -1,15 +1,5 @@
-name = "GLM 5.2"
-description = "Open flagship GLM for long-horizon coding agents and million-token context work"
-family = "glm"
-release_date = "2026-06-13"
-last_updated = "2026-06-13"
-attachment = false
-reasoning = true
+base_model = "zhipuai/glm-5.2"
 reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high", "max"] }]
-temperature = true
-tool_call = true
-structured_output = true
-open_weights = true
 
 [interleaved]
 field = "reasoning_content"
@@ -18,11 +8,3 @@ field = "reasoning_content"
 input = 1.05
 output = 4.40
 cache_read = 0.21
-
-[limit]
-context = 1_000_000
-output = 131_072
-
-[modalities]
-input = ["text"]
-output = ["text"]
