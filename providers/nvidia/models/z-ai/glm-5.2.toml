@@ -1,7 +1,7 @@
-base_model = "zhipuai/glm-5.2"
-
 # NIM Chat schema: `chat_template_kwargs.enable_thinking = true|false`.
 # https://docs.api.nvidia.com/nim/reference/z-ai-glm-5.2-infer
+base_model = "zhipuai/glm-5.2"
+
 reasoning_options = [{ type = "toggle" }]
 
 [interleaved]
