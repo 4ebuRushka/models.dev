@@ -1,5 +1,15 @@
-base_model = "zhipuai/glm-5.1"
+name = "GLM 5.1"
+description = "Strong GLM coding model for agentic engineering, terminals, and repository generation"
+family = "glm"
+release_date = "2026-04-07"
+last_updated = "2026-04-07"
+attachment = false
+reasoning = true
 reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high", "max"] }]
+temperature = true
+tool_call = true
+structured_output = true
+open_weights = true
 
 [interleaved]
 field = "reasoning_content"
@@ -7,4 +17,11 @@ field = "reasoning_content"
 [cost]
 input = 0.975
 output = 4.30
-cache_read = 0.26
+
+[limit]
+context = 200_000
+output = 131_072
+
+[modalities]
+input = ["text"]
+output = ["text"]
