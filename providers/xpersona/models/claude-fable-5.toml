@@ -1,15 +1,9 @@
-name = "Claude Fable 5"
-description = "Premium coding model alias for deep repository work with extra-high reasoning"
+base_model = "anthropic/claude-fable-5"
+base_model_omit = ["cost.cache_write"]
 release_date = "2026-07-05"
 last_updated = "2026-07-05"
 attachment = false
-reasoning = true
-reasoning_options = [{ type = "effort", values = ["low", "medium", "high", "xhigh", "max"] }]
-temperature = false
 knowledge = "2025-12-30"
-tool_call = true
-structured_output = true
-open_weights = false
 interleaved = { field = "reasoning_content" }
 
 [cost]
