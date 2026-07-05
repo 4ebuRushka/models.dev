@@ -1,4 +1,4 @@
-base_model = "poolside/laguna-m.1"
+base_model = "poolside/laguna-xs-2.1"
 reasoning_options = []
 
 [interleaved]
