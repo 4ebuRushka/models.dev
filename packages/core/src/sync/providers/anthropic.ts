@@ -12,6 +12,7 @@ const CapabilitySupport = z.object({ supported: z.boolean() }).passthrough();
 
 const AnthropicModel = z.object({
   id: z.string(),
+  canonical_id: z.string().optional(),
   display_name: z.string(),
   created_at: z.string(),
   max_input_tokens: z.number().int().nonnegative(),
@@ -67,7 +68,6 @@ export const anthropic = {
   id: "anthropic",
   name: "Anthropic",
   modelsDir: "providers/anthropic/models",
-  deleteMissing: false,
   sourceID(model) {
     return model.id;
   },
@@ -78,12 +78,6 @@ export const anthropic = {
       `Skipped remote IDs: ${ids.map((id) => `\`${id}\``).join(", ")}`,
     ];
   },
-  missingNotice(paths) {
-    if (paths.length === 0) return [];
-    return [
-      `${paths.length} local Anthropic models were retained because the Models API lists models available to the configured API key.`,
-    ];
-  },
   async fetchModels() {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) throw new Error("Anthropic sync requires ANTHROPIC_API_KEY");
@@ -92,7 +86,7 @@ export const anthropic = {
       fetchAllModels(key),
       fetchPricing(),
     ]);
-    return { models, pricing };
+    return { models: [...models, ...await fetchAliases(key, models)], pricing };
   },
   parseModels(raw) {
     const response = AnthropicResponse.parse(raw);
@@ -110,7 +104,8 @@ export const anthropic = {
 
     const baseModel = `anthropic/${model.id}`;
     if (!existsSync(path.join(METADATA_DIR, `${model.id}.toml`))) return undefined;
-    return { id: model.id, model: buildAnthropicModel(model, undefined, baseModel) };
+    const canonical = model.canonical_id === undefined ? undefined : context.existing(model.canonical_id);
+    return { id: model.id, model: buildAnthropicModel(model, canonical, baseModel) };
   },
 } satisfies SyncProvider<AnthropicSourceModel>;
 
@@ -142,6 +137,30 @@ async function fetchAllModels(key: string) {
   } while (afterID !== undefined);
 
   return models;
+}
+
+async function fetchAliases(key: string, models: AnthropicModel[]) {
+  const canonicalIDs = new Set(models.map((model) => model.id));
+  const candidates = [...new Set(models
+    .map((model) => model.id.replace(/-\d{8}$/, ""))
+    .filter((id) => !canonicalIDs.has(id)))];
+
+  const aliases = await Promise.all(candidates.map(async (id) => {
+    const response = await fetch(`${API_ENDPOINT}/${id}`, {
+      headers: {
+        "anthropic-version": "2023-06-01",
+        "x-api-key": key,
+      },
+    });
+    if (response.status === 404) return undefined;
+    if (!response.ok) {
+      throw new Error(`Anthropic model alias request failed for ${id}: ${response.status} ${response.statusText}`);
+    }
+    const model = AnthropicModel.parse(await response.json());
+    return { ...model, id, canonical_id: model.id };
+  }));
+
+  return aliases.filter((model): model is AnthropicModel => model !== undefined);
 }
 
 async function fetchPricing() {
@@ -246,7 +265,10 @@ function reasoningOptions(model: AnthropicModel, existing: ExistingModel | undef
   if (effort?.supported) {
     const values = (["low", "medium", "high", "xhigh", "max"] as const)
       .filter((value) => effort[value]?.supported === true);
-    if (values.length > 0) options.push({ type: "effort", values });
+    if (values.length > 0) {
+      const budgetIndex = options.findIndex((option) => option.type === "budget_tokens");
+      options.splice(budgetIndex < 0 ? options.length : budgetIndex, 0, { type: "effort", values });
+    }
   }
   return options;
 }

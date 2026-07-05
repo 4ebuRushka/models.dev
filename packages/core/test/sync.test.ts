@@ -159,6 +159,49 @@ test("formats empty reasoning options outside the interleaved table", () => {
   });
 });
 
+test("formats provider overrides and experimental modes", () => {
+  const content = formatToml({
+    id: "example/model",
+    name: "Example Model",
+    description: "Example model for sync formatting regression tests",
+    release_date: "2026-01-01",
+    last_updated: "2026-01-01",
+    attachment: false,
+    reasoning: false,
+    tool_call: true,
+    open_weights: false,
+    limit: { context: 1_000, output: 100 },
+    modalities: { input: ["text"], output: ["text"] },
+    provider: { body: { custom_flag: true } },
+    experimental: {
+      modes: {
+        fast: {
+          cost: { input: 2, output: 4 },
+          provider: {
+            body: { speed: "fast" },
+            headers: { "anthropic-beta": "fast-mode-2026-02-01" },
+          },
+        },
+      },
+    },
+  });
+
+  expect(Bun.TOML.parse(content)).toMatchObject({
+    provider: { body: { custom_flag: true } },
+    experimental: {
+      modes: {
+        fast: {
+          cost: { input: 2, output: 4 },
+          provider: {
+            body: { speed: "fast" },
+            headers: { "anthropic-beta": "fast-mode-2026-02-01" },
+          },
+        },
+      },
+    },
+  });
+});
+
 test("DeepInfra preserves live modalities for new base models", () => {
   const model = buildDeepInfraModel(
     deepInfraModel("Qwen/Qwen3.5-9B", ["multimodal", "input-video"]),

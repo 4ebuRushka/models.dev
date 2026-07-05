@@ -714,6 +714,24 @@ function formatNumber(n: number) {
   return Number.isInteger(n) ? formatInteger(n) : String(n);
 }
 
+function formatKey(value: string) {
+  return /^[A-Za-z0-9_-]+$/.test(value) ? value : quote(value);
+}
+
+function formatInlineValue(value: unknown): string {
+  if (typeof value === "string") return quote(value);
+  if (typeof value === "number") return formatNumber(value);
+  if (typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return `[${value.map(formatInlineValue).join(", ")}]`;
+  if (value !== null && typeof value === "object") {
+    const fields = Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .map(([key, item]) => `${formatKey(key)} = ${formatInlineValue(item)}`);
+    return `{ ${fields.join(", ")} }`;
+  }
+  throw new Error("Cannot serialize null or undefined as TOML");
+}
+
 function formatReasoningValue(value: string | null) {
   return value === null ? quote("null") : quote(value);
 }
@@ -831,6 +849,21 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
     if (model.modalities.output !== undefined) {
       lines.push(`output = [${model.modalities.output.map(quote).join(", ")}]`);
     }
+  }
+
+  if (model.provider !== undefined) {
+    lines.push("", "[provider]");
+    if (model.provider.npm !== undefined) lines.push(`npm = ${quote(model.provider.npm)}`);
+    if (model.provider.api !== undefined) lines.push(`api = ${quote(model.provider.api)}`);
+    if (model.provider.shape !== undefined) lines.push(`shape = ${quote(model.provider.shape)}`);
+    if (model.provider.body !== undefined) lines.push(`body = ${formatInlineValue(model.provider.body)}`);
+    if (model.provider.headers !== undefined) lines.push(`headers = ${formatInlineValue(model.provider.headers)}`);
+  }
+
+  for (const [name, mode] of Object.entries(model.experimental?.modes ?? {})) {
+    lines.push("", `[experimental.modes.${formatKey(name)}]`);
+    if (mode.cost !== undefined) lines.push(`cost = ${formatInlineValue(mode.cost)}`);
+    if (mode.provider !== undefined) lines.push(`provider = ${formatInlineValue(mode.provider)}`);
   }
 
   return `${lines.join("\n")}\n`;
