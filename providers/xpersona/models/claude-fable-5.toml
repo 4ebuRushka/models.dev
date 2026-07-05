@@ -6,6 +6,10 @@ attachment = false
 knowledge = "2025-12-30"
 interleaved = { field = "reasoning_content" }
 
+[[reasoning_options]]
+type = "effort"
+values = ["low", "medium", "high", "xhigh", "max"]
+
 [cost]
 input = 3.00
 output = 18.00
