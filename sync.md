@@ -15,6 +15,7 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync direct` syncs every provider in the `direct` group.
 - `bun models:sync google` syncs only Google.
 - `bun models:sync xai` syncs only xAI.
+- `bun models:sync openai` syncs only OpenAI catalog availability.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
 - `bun validate` validates the generated catalog after a sync.
@@ -154,6 +155,14 @@ xAI is implemented in `packages/core/src/sync/providers/xai.ts`.
 - The richer typed endpoints provide model IDs, creation timestamps, modalities, pricing for language models, and prompt/input limits where available.
 - Existing xAI models are updated from API-authoritative fields while local metadata is preserved for fields the API does not expose, especially output token limits and some feature/capability flags.
 - New xAI API models are reported in `.sync/model-sync-report.md` but not created automatically because the API does not provide enough authoritative metadata for complete catalog entries.
+
+## OpenAI Notes
+
+- OpenAI is implemented in `packages/core/src/sync/providers/openai.ts`.
+- Source endpoint: `https://api.openai.com/v1/models`.
+- Required auth: `OPENAI_API_KEY` from an automation account with access to the full first-party catalog.
+- The endpoint is authoritative only for catalog availability. Existing TOMLs are preserved byte-for-byte, missing local models are removed, and unknown remote models are reported for manual authoring.
+- Fine-tuned and customer-owned models are excluded. Suspiciously small first-party responses fail before deletion to guard against scoped credentials or upstream response problems.
 
 ## OVHcloud Notes
 

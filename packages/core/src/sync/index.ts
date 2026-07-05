@@ -12,6 +12,7 @@ import { deepinfra } from "./providers/deepinfra.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
 import { llmgateway } from "./providers/llmgateway.js";
+import { openai } from "./providers/openai.js";
 import { openrouter } from "./providers/openrouter.js";
 import { ovhcloud } from "./providers/ovhcloud.js";
 import { vercel } from "./providers/vercel.js";
@@ -93,6 +94,7 @@ export const providers: {
   google: SyncProvider<any>;
   huggingface: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
+  openai: SyncProvider<any>;
   openrouter: SyncProvider<any>;
   ovhcloud: SyncProvider<any>;
   vercel: SyncProvider<any>;
@@ -107,6 +109,7 @@ export const providers: {
   google,
   huggingface,
   llmgateway,
+  openai,
   openrouter,
   ovhcloud,
   vercel,
@@ -117,7 +120,7 @@ export const providers: {
 export const groups = {
   aggregators: ["huggingface", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
-  direct: ["anthropic", "baseten", "chutes", "deepinfra", "google", "ovhcloud", "venice", "xai"],
+  direct: ["anthropic", "baseten", "chutes", "deepinfra", "google", "openai", "ovhcloud", "venice", "xai"],
 } as const;
 
 type ProviderID = keyof typeof providers;

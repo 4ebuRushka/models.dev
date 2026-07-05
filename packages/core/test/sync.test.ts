@@ -12,6 +12,7 @@ import {
 import { buildDeepInfraModel, type DeepInfraModel } from "../src/sync/providers/deepinfra.js";
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
+import { fetchOpenAIModels, openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {
@@ -118,6 +119,37 @@ test("labels Anthropic aliases as latest", () => {
   }), undefined, "anthropic/claude-sonnet-5");
 
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
+test("filters customer-owned OpenAI models from availability tracking", () => {
+  expect(parseOpenAIModels({
+    object: "list",
+    data: [
+      { id: "gpt-5.5", object: "model", created: 1, owned_by: "system" },
+      { id: "ft:gpt-5.5:org:custom", object: "model", created: 2, owned_by: "org-example" },
+      { id: "custom-model", object: "model", created: 3, owned_by: "org-example" },
+    ],
+  }).map((model) => model.id)).toEqual(["gpt-5.5"]);
+});
+
+test("rejects suspiciously small OpenAI catalogs before deletion", async () => {
+  const fetcher = (() => Promise.resolve(new Response(JSON.stringify({
+    object: "list",
+    data: [{ id: "gpt-5.5", object: "model", created: 1, owned_by: "system" }],
+  })))) as typeof fetch;
+
+  expect(fetchOpenAIModels("test-key", fetcher)).rejects.toThrow("refusing to delete catalog entries");
+});
+
+test("OpenAI availability sync preserves authored metadata", () => {
+  const authored = {
+    base_model: "openai/gpt-5.5",
+    cost: { input: 5, output: 30 },
+  };
+  expect(openai.translateModel(
+    { id: "gpt-5.5", object: "model", created: 1, owned_by: "system" },
+    { existing: () => authored as never, authored: () => authored },
+  )).toEqual({ id: "gpt-5.5", model: authored });
 });
 
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
