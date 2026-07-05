@@ -1,0 +1,27 @@
+name = "Claude Fable 5"
+description = "Premium coding model alias for deep repository work with extra-high reasoning"
+release_date = "2026-07-05"
+last_updated = "2026-07-05"
+attachment = false
+reasoning = true
+reasoning_options = [{ type = "effort", values = ["low", "medium", "high", "xhigh", "max"] }]
+temperature = false
+knowledge = "2025-12-30"
+tool_call = true
+structured_output = true
+open_weights = false
+interleaved = { field = "reasoning_content" }
+
+[cost]
+input = 3.00
+output = 18.00
+reasoning = 18.00
+cache_read = 0.30
+
+[limit]
+context = 1_000_000
+output = 128_000
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]
