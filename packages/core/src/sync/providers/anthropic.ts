@@ -254,13 +254,15 @@ function releaseDate(value: string, fallback: string | undefined) {
 
 function reasoningOptions(model: AnthropicModel, existing: ExistingModel | undefined) {
   if (model.capabilities.thinking?.supported !== true) return undefined;
+  const enabled = model.capabilities.thinking.types?.enabled?.supported === true;
   const options = (existing?.reasoning_options ?? []).filter((option) => {
     if (option.type === "effort") return false;
-    if (option.type === "budget_tokens") {
-      return model.capabilities.thinking?.types?.enabled?.supported === true;
-    }
+    if (option.type === "budget_tokens") return enabled;
     return true;
   });
+  if (enabled && !options.some((option) => option.type === "budget_tokens")) {
+    options.push({ type: "budget_tokens" });
+  }
   const effort = model.capabilities.effort;
   if (effort?.supported) {
     const values = (["low", "medium", "high", "xhigh", "max"] as const)

@@ -98,6 +98,19 @@ test("syncs Anthropic capabilities and exact effort levels", () => {
   });
 });
 
+test("adds manual budget control for new Anthropic models", () => {
+  const model = buildAnthropicModel(anthropicModel({
+    capabilities: {
+      thinking: {
+        supported: true,
+        types: { enabled: { supported: true } },
+      },
+    },
+  }), undefined, "anthropic/claude-sonnet-5");
+
+  expect(model.reasoning_options).toEqual([{ type: "budget_tokens" }]);
+});
+
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
   return {
     model_name,
