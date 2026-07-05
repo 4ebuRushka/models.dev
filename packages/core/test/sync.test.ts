@@ -111,6 +111,15 @@ test("adds manual budget control for new Anthropic models", () => {
   expect(model.reasoning_options).toEqual([{ type: "budget_tokens" }]);
 });
 
+test("labels Anthropic aliases as latest", () => {
+  const model = buildAnthropicModel(anthropicModel({
+    id: "claude-sonnet-5",
+    canonical_id: "claude-sonnet-5-20260630",
+  }), undefined, "anthropic/claude-sonnet-5");
+
+  expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
   return {
     model_name,

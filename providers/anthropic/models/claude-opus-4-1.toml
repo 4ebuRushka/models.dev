@@ -1,5 +1,5 @@
 base_model = "anthropic/claude-opus-4-1"
-name = "Claude Opus 4.1"
+name = "Claude Opus 4.1 (latest)"
 description = "Flagship Claude model for deep reasoning, coding, and long-horizon agents"
 family = "claude-opus"
 release_date = "2025-08-05"

@@ -294,6 +294,9 @@ export function buildAnthropicModel(
   existing: ExistingModel | undefined,
   baseModel?: string,
 ): SyncedModel {
+  const name = model.canonical_id !== undefined && !model.display_name.endsWith("(latest)")
+    ? `${model.display_name} (latest)`
+    : model.display_name;
   const reasoning = model.capabilities.thinking?.supported ?? existing?.reasoning ?? false;
   const input = [
     "text" as const,
@@ -310,6 +313,7 @@ export function buildAnthropicModel(
   if (baseModel !== undefined) {
     return {
       base_model: baseModel,
+      name: model.canonical_id === undefined ? undefined : name,
       attachment: input.length > 1,
       reasoning,
       reasoning_options: options,
@@ -334,7 +338,7 @@ export function buildAnthropicModel(
   }
 
   return {
-    name: model.display_name,
+    name,
     description: existing.description,
     family: existing.family,
     release_date: releaseDate(model.created_at, existing.release_date) ?? existing.release_date,
