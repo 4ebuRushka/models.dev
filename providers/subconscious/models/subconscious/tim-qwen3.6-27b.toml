@@ -3,8 +3,7 @@
 # Reasoning controls: the OpenAI-compatible format toggles thinking via
 # chat_template_kwargs.enable_thinking (true|false); the Anthropic Messages
 # format uses thinking.type = "enabled" with thinking.budget_tokens to cap
-# reasoning. For the OpenAI-compatible endpoint, reasoning streams inline
-# within the content field (between think tags).
+# reasoning and returns it in separate thinking content blocks.
 # Sources (accessed 2026-07-06):
 #   https://www.subconscious.dev/pricing
 #   https://docs.subconscious.dev/features/thinking
@@ -18,8 +17,6 @@ temperature = true
 release_date = "2026-05-11"
 last_updated = "2026-05-11"
 open_weights = false
-interleaved = true
-
 [[reasoning_options]]
 type = "toggle" # API: {"chat_template_kwargs": {"enable_thinking": true | false}}
 
