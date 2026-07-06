@@ -1,9 +1,9 @@
-# models.dev
+# @opencode-ai/models
 
 Official typed client for the [models.dev](https://models.dev) API — an open-source database of AI model capabilities, pricing, and limits.
 
 ```sh
-npm install models.dev
+npm install @opencode-ai/models
 ```
 
 - **Zero dependencies.** The root client is a small `fetch` wrapper; works on Node ≥ 18, Bun, Deno, browsers, and edge runtimes.
@@ -13,7 +13,7 @@ npm install models.dev
 ## Usage
 
 ```ts
-import { Models } from "models.dev"
+import { Models } from "@opencode-ai/models"
 
 const client = Models.make()
 
@@ -58,7 +58,7 @@ Errors are a single `ModelsDevError` with `reason: "Transport" | "UnexpectedStat
 A full copy of the database ships inside the package as a separate, tree-shakable entrypoint — nothing from it is loaded or bundled unless you import it:
 
 ```ts
-import snapshot, { providers, models, generatedAt } from "models.dev/snapshot"
+import snapshot, { providers, models, generatedAt } from "@opencode-ai/models/snapshot"
 
 providers["anthropic"]?.models["claude-opus-4-6"]?.limit.context
 ```
@@ -66,17 +66,17 @@ providers["anthropic"]?.models["claude-opus-4-6"]?.limit.context
 Use it for no-network runtimes, tests, cold-start-sensitive paths, or as an explicit fallback:
 
 ```ts
-const providers = await client.providers().catch(async () => (await import("models.dev/snapshot")).providers)
+const providers = await client.providers().catch(async () => (await import("@opencode-ai/models/snapshot")).providers)
 ```
 
 Freshness: the published snapshot is at most ~24h behind the live API (data releases are automated). The client is the freshness path; the snapshot is the availability path.
 
 ## Effect
 
-An Effect-native client lives at `models.dev/effect` (requires the optional peer dependency `effect`):
+An Effect-native client lives at `@opencode-ai/models/effect` (requires the optional peer dependency `effect`):
 
 ```ts
-import { Models } from "models.dev/effect"
+import { Models } from "@opencode-ai/models/effect"
 import { FetchHttpClient } from "effect/unstable/http"
 import { Effect } from "effect"
 

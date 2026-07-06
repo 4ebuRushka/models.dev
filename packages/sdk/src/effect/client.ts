@@ -1,7 +1,6 @@
 import { Context, Effect, Layer, Schema } from "effect"
 import { HttpClient, HttpClientResponse } from "effect/unstable/http"
 import type { Catalog, ModelMetadataMap, ProviderMap } from "../types.js"
-import { VERSION } from "../version.js"
 
 /** The only error in the failure channel of client methods. Wraps the underlying `HttpClientError` as `cause`. */
 export class ModelsDevError extends Schema.TaggedErrorClass<ModelsDevError>()("ModelsDevError", {
@@ -30,7 +29,7 @@ export const make = (options?: ClientOptions) =>
     const get = <A>(path: string): Effect.Effect<A, ModelsDevError> =>
       http
         .get(new URL(path, base), {
-          headers: { "user-agent": `models.dev/${VERSION}`, ...options?.headers },
+          headers: options?.headers,
         })
         .pipe(
           Effect.flatMap(HttpClientResponse.filterStatusOk),
@@ -52,7 +51,7 @@ export const make = (options?: ClientOptions) =>
 export type ModelsClient = Effect.Success<ReturnType<typeof make>>
 
 /** Service key for dependency-injecting a shared client: `yield* Models.Service`. */
-export class Service extends Context.Service<Service, ModelsClient>()("models.dev/Models") {}
+export class Service extends Context.Service<Service, ModelsClient>()("@opencode-ai/models/Models") {}
 
 /** Layer providing `Models.Service`; requires an `HttpClient` in the environment. */
 export const layer = (options?: ClientOptions) => Layer.effect(Service)(make(options))

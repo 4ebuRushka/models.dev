@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "models.dev",
+  "name": "@opencode-ai/models",
   "version": "0.0.0",
   "description": "Official typed client for the models.dev API \u2014 an open database of AI model capabilities, pricing, and limits",
   "type": "module",
@@ -26,9 +26,18 @@
     "node": ">=18"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./effect": "./src/effect.ts",
-    "./snapshot": "./src/snapshot.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./effect": {
+      "types": "./dist/effect.d.ts",
+      "default": "./dist/effect.js"
+    },
+    "./snapshot": {
+      "types": "./dist/snapshot.d.ts",
+      "default": "./dist/snapshot.js"
+    }
   },
   "files": [
     "dist"
@@ -36,6 +45,7 @@
   "scripts": {
     "generate": "bun script/generate.ts",
     "build": "bun script/build.ts",
+    "prepack": "bun run build",
     "typecheck": "tsc --noEmit",
     "test": "bun run generate && bun run typecheck && bun test"
   },

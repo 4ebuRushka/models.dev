@@ -25,7 +25,7 @@ test("providers() succeeds through an injected transport", async () => {
   const result = await program.pipe(Effect.provide(layer), Effect.runPromise)
   expect(result["anthropic"]?.id).toBe("anthropic")
   expect(requests[0]?.url).toBe("https://models.dev/api.json")
-  expect(requests[0]?.headers.get("user-agent")).toMatch(/^models\.dev\//)
+  expect(requests[0]?.headers.get("user-agent")).toBeNull()
 })
 
 test("models() and catalog() hit their endpoints, baseUrl subpath preserved", async () => {

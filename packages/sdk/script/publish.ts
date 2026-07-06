@@ -1,12 +1,11 @@
 #!/usr/bin/env bun
-// Publishes models.dev to npm, opencode-style:
-// - the version is never stored in git: it is `npm view models.dev version`
+// Publishes @opencode-ai/models to npm, opencode-style:
+// - the version is never stored in git: it is read from npm
 //   plus a semver bump computed here (patch by default);
 // - `--if-changed` (scheduled data releases) skips publishing when the
 //   freshly generated snapshot payload is byte-identical to the one inside
 //   the currently published tarball;
-// - package.json exports are rewritten src -> dist for the tarball and
-//   restored afterwards.
+// - package.json and src/version.ts are restored after publishing.
 //
 // Auth: npm Trusted Publishing (OIDC) in CI — no token needed once the
 // package is linked to this repo+workflow on npmjs.com. `--provenance` is
@@ -17,9 +16,9 @@ import { appendFile, mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { $ } from "bun"
 import { loadCatalog, snapshotPayload } from "./generate.ts"
-import { build } from "./build.ts"
 
 const pkg = path.join(import.meta.dirname, "..")
+const packageName = "@opencode-ai/models"
 const packageJsonPath = path.join(pkg, "package.json")
 const versionTsPath = path.join(pkg, "src", "version.ts")
 
@@ -32,11 +31,7 @@ if (!["patch", "minor", "major"].includes(bumpArg)) {
 }
 
 async function currentVersion(): Promise<string> {
-  try {
-    return (await $`npm view models.dev version`.text()).trim()
-  } catch {
-    return "0.0.0"
-  }
+  return (await $`npm view ${packageName} version`.text()).trim()
 }
 
 function bump(version: string, kind: string): string {
@@ -50,7 +45,7 @@ function bump(version: string, kind: string): string {
 async function publishedSnapshotLine(): Promise<string | undefined> {
   const directory = await mkdtemp(path.join(tmpdir(), "models-dev-publish-"))
   try {
-    const tarball = (await $`npm pack models.dev@latest --pack-destination ${directory}`.cwd(directory).text())
+    const tarball = (await $`npm pack ${packageName}@latest --pack-destination ${directory}`.cwd(directory).text())
       .trim()
       .split("\n")
       .at(-1)!
@@ -59,8 +54,6 @@ async function publishedSnapshotLine(): Promise<string | undefined> {
     if (!(await file.exists())) return undefined
     const text = await file.text()
     return text.split("\n").find((line) => line.startsWith("const data = "))
-  } catch {
-    return undefined
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
@@ -80,27 +73,16 @@ if (ifChanged) {
 const current = await currentVersion()
 const next = bump(current, bumpArg)
 
-const alreadyPublished = await $`npm view models.dev@${next} version`.quiet().nothrow().text()
-if (alreadyPublished.trim() === next) {
-  console.log(`models.dev@${next} already published; skipping`)
-  process.exit(0)
-}
+console.log(`Publishing ${packageName}@${next} (${bumpArg} bump from ${current})`)
 
-console.log(`Publishing models.dev@${next} (${bumpArg} bump from ${current})`)
-
-const packageJson = await Bun.file(packageJsonPath).json()
+const packageJsonText = await Bun.file(packageJsonPath).text()
+const packageJson = JSON.parse(packageJsonText)
 const versionTs = await Bun.file(versionTsPath).text()
 
 try {
   await Bun.write(versionTsPath, versionTs.replace('"0.0.0"', JSON.stringify(next)))
-  await build()
 
   packageJson.version = next
-  packageJson.exports = {
-    ".": { types: "./dist/index.d.ts", default: "./dist/index.js" },
-    "./effect": { types: "./dist/effect.d.ts", default: "./dist/effect.js" },
-    "./snapshot": { types: "./dist/snapshot.d.ts", default: "./dist/snapshot.js" },
-  }
   await Bun.write(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
   const provenance = process.env["GITHUB_ACTIONS"] === "true" ? ["--provenance"] : []
@@ -108,7 +90,7 @@ try {
 
   const output = process.env["GITHUB_OUTPUT"]
   if (output !== undefined) await appendFile(output, `version=${next}\n`)
-  console.log(`Published models.dev@${next}`)
+  console.log(`Published ${packageName}@${next}`)
 } finally {
-  await $`git checkout -- ${packageJsonPath} ${versionTsPath}`.nothrow()
+  await Promise.all([Bun.write(packageJsonPath, packageJsonText), Bun.write(versionTsPath, versionTs)])
 }

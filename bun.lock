@@ -30,7 +30,7 @@
       },
     },
     "packages/sdk": {
-      "name": "models.dev",
+      "name": "@opencode-ai/models",
       "version": "0.0.0",
       "devDependencies": {
         "@models.dev/core": "workspace:*",

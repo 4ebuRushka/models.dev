@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Models, ModelsDevError, VERSION } from "../src/index.js"
+import { Models, ModelsDevError } from "../src/index.js"
 
 interface Call {
   url: URL
@@ -50,13 +50,13 @@ test("baseUrl with subpath is preserved, with or without trailing slash", async 
   ])
 })
 
-test("identifies itself with a versioned user-agent", async () => {
+test("does not add headers by default", async () => {
   const { calls, fetch } = stub({})
   await Models.make({ fetch }).providers()
-  expect(headers(calls[0]!).get("user-agent")).toBe(`models.dev/${VERSION}`)
+  expect([...headers(calls[0]!).entries()]).toEqual([])
 })
 
-test("client headers override defaults, request headers override client headers", async () => {
+test("request headers override client headers", async () => {
   const { calls, fetch } = stub({})
   const client = Models.make({ fetch, headers: { "user-agent": "custom", "x-one": "client", "x-two": "client" } })
   await client.providers({ headers: { "x-two": "request" } })

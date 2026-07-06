@@ -1,6 +1,5 @@
 import { ModelsDevError } from "./error.js"
 import type { Catalog, ModelMetadataMap, ProviderMap } from "./types.js"
-import { VERSION } from "./version.js"
 
 /** Accepted anywhere headers can be passed. Same shapes as the standard `HeadersInit`. */
 export type HeadersInput = Headers | Record<string, string> | Array<[string, string]>
@@ -28,7 +27,7 @@ export interface RequestOptions {
  * Creates a stateless models.dev client. Every method performs exactly one
  * `GET` and nothing is ever cached — callers who want caching should wrap
  * calls with their own policy. For a no-network alternative, see the
- * `models.dev/snapshot` entrypoint.
+ * `@opencode-ai/models/snapshot` entrypoint.
  */
 export function make(options: ClientOptions = {}) {
   const baseUrl = options.baseUrl ?? "https://models.dev"
@@ -36,7 +35,7 @@ export function make(options: ClientOptions = {}) {
 
   const request = async <A>(path: string, requestOptions?: RequestOptions): Promise<A> => {
     const fetch = options.fetch ?? globalThis.fetch
-    const headers = new Headers({ "user-agent": `models.dev/${VERSION}` })
+    const headers = new Headers()
     for (const [key, value] of new Headers(options.headers)) headers.set(key, value)
     for (const [key, value] of new Headers(requestOptions?.headers)) headers.set(key, value)
 
