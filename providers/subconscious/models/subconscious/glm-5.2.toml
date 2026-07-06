@@ -1,0 +1,23 @@
+# Subconscious serves GLM-5.2 as subconscious/glm-5.2.
+# Pricing (USD per 1M tokens): cached $0.26, input $1.40, output $4.40.
+# Reasoning controls: the OpenAI-compatible format toggles thinking via
+# chat_template_kwargs.enable_thinking (true|false); the Anthropic Messages
+# format uses thinking.type = "enabled"|"disabled" with thinking.budget_tokens
+# to cap reasoning. For the OpenAI-compatible endpoint, reasoning streams inline
+# within the content field (between think tags).
+# Sources (accessed 2026-07-06):
+#   https://www.subconscious.dev/pricing
+#   https://docs.subconscious.dev/features/thinking
+base_model = "zhipuai/glm-5.2"
+interleaved = true
+
+[[reasoning_options]]
+type = "toggle" # API: {"chat_template_kwargs": {"enable_thinking": true | false}}
+
+[[reasoning_options]]
+type = "budget_tokens" # API: {"thinking": {"type": "enabled", "budget_tokens": <n>}}
+
+[cost]
+input = 1.4
+output = 4.4
+cache_read = 0.26
