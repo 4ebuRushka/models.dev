@@ -1,7 +1,9 @@
 base_model = "deepseek/deepseek-v4-pro"
-description = "DeepSeek V4-Pro is a 1.6T-parameter MoE model with 49B active parameters and a 1M context length. As the flagship of the DeepSeek V4 family, it features a hybrid attention architecture for efficient long-context processing and is purpose-built for advanced reasoning, complex software engineering, and long-horizon agentic tasks."
+description = "DeepSeek V4-Pro is a 1.6T-parameter MoE model with 49B active parameters excelling at advanced reasoning, coding, and complex agentic workloads."
 family = "deepseek"
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle"
 
 [cost]
 input = 1.74

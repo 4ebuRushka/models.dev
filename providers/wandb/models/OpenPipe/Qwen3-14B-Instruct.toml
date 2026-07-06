@@ -1,5 +1,5 @@
 name = "Qwen3 14B Instruct"
-description = "OpenPipe/Qwen3-14B-Instruct is a finetune friendly instruct variant of Qwen3-14B. Qwen3 release does not include a 14B Instruct (non-thinking) model, this fork introduces an updated chat template that makes Qwen3-14B non-thinking by default and be highly compatible with OpenPipe and other finetuning frameworks. The default Qwen3 chat template does not render <think></think> tags on the previous assistant message, which can lead to inconsistencies between training and generation. This version resolves that issue by adding <think></think> tags to all assistant prompts and generation templates to ensure message format consistency during both training and inference. The model retains the strong general capabilities of Qwen3-14B while providing a more finetuning friendly chat template."
+description = "An efficient multilingual, dense, instruction-tuned model, optimized by OpenPipe for building agents with finetuning."
 family = "qwen"
 release_date = "2025-04-29"
 last_updated = "2025-04-29"

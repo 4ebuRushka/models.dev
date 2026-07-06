@@ -1,10 +1,12 @@
 base_model = "alibaba/qwen3.6-35b-a3b"
 name = "Qwen3.6 35B A3B"
-description = "Qwen3.6-35B-A3B is a 35B-parameter MoE multimodal model with 3B active parameters and a 262K native context window. As the MoE variant in the Qwen3.6 family, its architecture makes it ideal for efficient agentic coding and high-volume workflows."
+description = "Qwen3.6-35B-A3B is an MoE multimodal model with 262K context optimized for agentic coding workflows."
 family = "qwen3.6"
 release_date = "2026-04-15"
 last_updated = "2026-04-15"
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle"
 
 [cost]
 input = 0.25

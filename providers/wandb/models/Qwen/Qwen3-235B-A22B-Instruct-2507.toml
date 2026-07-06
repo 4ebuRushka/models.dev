@@ -1,6 +1,6 @@
 base_model = "alibaba/qwen3-235b-a22b"
 name = "Qwen3 235B A22B-2507"
-description = "Qwen3-235B-A22B-Instruct-2507 is a multilingual, instruction-tuned mixture-of-experts language model based on the Qwen3-235B architecture, with 22B active parameters per forward pass. It is optimized for general-purpose text generation, including instruction following, logical reasoning, math, code, and tool usage. The model does not implement \"thinking mode\" (<think> blocks). Compared to its base variant, this version delivers significant gains in knowledge coverage, long-context reasoning, coding benchmarks, and alignment with open-ended tasks. It is particularly strong on multilingual understanding, math reasoning (e.g., AIME, HMMT), and alignment evaluations like Arena-Hard and WritingBench."
+description = "Efficient multilingual, Mixture-of-Experts, instruction-tuned model, optimized for logical reasoning."
 release_date = "2025-07-22"
 last_updated = "2025-07-22"
 reasoning = false

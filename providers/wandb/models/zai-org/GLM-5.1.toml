@@ -1,6 +1,6 @@
 base_model = "zhipuai/glm-5.1"
 name = "GLM 5.1"
-description = "GLM-5.1 is a Mixture-of-Experts (MoE) model for long-horizon agentic engineering and advanced reasoning. It delivers significant improvement compared to GLM-5 across a wide range of academic benchmarks."
+description = "Powerful MoE model for long-horizon agentic engineering and advanced reasoning."
 
 [interleaved]
 field = "reasoning_content"

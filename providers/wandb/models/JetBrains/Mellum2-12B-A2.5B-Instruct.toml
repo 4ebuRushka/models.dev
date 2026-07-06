@@ -1,5 +1,5 @@
 name = "Mellum2 12B A2.5B"
-description = "Mellum2-12B-A2.5B-Instruct is a JetBrains-built MoE model with 12B total parameters and only 2.5B active per token, supporting a 131K context window. Trained from scratch on natural language and code, it is designed as a fast, cost-efficient model for production AI systems — excelling at routing, Q&A, tool use, sub-agent tasks, and RAG pipelines where latency and throughput matter most."
+description = "Mellum2-12B-A2.5B-Instruct is a fast MoE model with 131K context built for coding, tool use, and low-latency AI workflows."
 family = "jamba"
 release_date = "2026-06-01"
 last_updated = "2026-06-01"

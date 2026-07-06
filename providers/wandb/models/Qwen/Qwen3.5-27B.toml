@@ -1,11 +1,13 @@
 base_model = "alibaba/qwen3.5-27b"
 name = "Qwen3.5-27B"
-description = "Qwen3.5-27B is a dense model from the Qwen3.5 family excelling at instruction following, long context, reasoning, and search."
+description = "Qwen3.5-27B is a dense model from the Qwen3.5 family built for high performance across a large range of benchmarks."
 family = "qwen3.5"
 release_date = "2026-02-24"
 last_updated = "2026-02-24"
 status = "alpha"
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle"
 
 [cost]
 input = 0.39

@@ -1,7 +1,9 @@
 base_model = "alibaba/qwen3.6-27b"
-description = "Qwen3.6-27B is a 27B dense multimodal model with a 262K native context window. As the flagship of the Qwen3.6 family, it delivers top-tier performance in agentic coding, STEM reasoning, and vision-language tasks."
+description = "Qwen3.6-27B is a 27B dense multimodal model with 262K context built for flagship-level agentic coding."
 family = "qwen3.6"
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle"
 
 [cost]
 input = 0.6

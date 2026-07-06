@@ -1,5 +1,5 @@
 name = "Llama 3.1 8B"
-description = "Llama 3.1 8B provides efficient multilingual conversational support ideal for applications where responsiveness and computational efficiency are critical. Effective for building chatbots, automated customer interactions, and applications needing fast yet reliable language understanding."
+description = "Efficient conversational model optimized for responsive multilingual chatbot interactions."
 family = "llama"
 release_date = "2024-07-01"
 last_updated = "2024-07-01"

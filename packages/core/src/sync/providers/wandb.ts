@@ -3,6 +3,7 @@ import { readdirSync } from "node:fs";
 import { z } from "zod";
 
 import { inferKimiFamily, ModelFamily, ModelFamilyValues } from "../../family.js";
+import { ReasoningOption } from "../../schema.js";
 import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
 import { factorBaseModel } from "./openrouter.js";
 
@@ -36,6 +37,7 @@ export const WandbModel = z.object({
   description: z.string().optional(),
   attachment: z.boolean(),
   reasoning: z.boolean(),
+  reasoning_options: z.array(ReasoningOption).optional(),
   tool_call: z.boolean(),
   structured_output: z.boolean().optional(),
   temperature: z.boolean().optional(),
@@ -150,7 +152,10 @@ export function buildWandbModel(
     family: resolveFamily(model),
     attachment: model.attachment,
     reasoning: model.reasoning,
-    reasoning_options: model.reasoning ? existing?.reasoning_options ?? [] : undefined,
+    // The endpoint is authoritative for reasoning controls: an explicit list
+    // (e.g. a toggle) means the capability is exposed, while reasoning without
+    // any options means reasoning is always on and cannot be disabled.
+    reasoning_options: model.reasoning ? model.reasoning_options ?? [] : undefined,
     temperature: model.temperature ?? true,
     tool_call: model.tool_call,
     structured_output: model.structured_output === true,
