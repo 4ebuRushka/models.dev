@@ -20,6 +20,7 @@ import {
 } from "../src/sync/providers/digitalocean.js";
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
+import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {
@@ -126,6 +127,73 @@ test("labels Anthropic aliases as latest", () => {
   }), undefined, "anthropic/claude-sonnet-5");
 
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
+test("filters customer-owned OpenAI models from availability tracking", () => {
+  expect(parseOpenAIModels({
+    object: "list",
+    data: [
+      { id: "gpt-5.5", object: "model", created: 1, owned_by: "system" },
+      { id: "ft:gpt-5.5:org:custom", object: "model", created: 2, owned_by: "org-example" },
+      { id: "custom-model", object: "model", created: 3, owned_by: "org-example" },
+    ],
+  }).map((model) => model.id)).toEqual(["gpt-5.5"]);
+});
+
+test("OpenAI availability sync preserves authored metadata", () => {
+  const authored = {
+    base_model: "openai/gpt-5.5",
+    cost: { input: 5, output: 30 },
+  };
+  expect(openai.translateModel(
+    { id: "gpt-5.5", object: "model", created: 1, owned_by: "system" },
+    { existing: () => authored as never, authored: () => authored },
+  )).toEqual({ id: "gpt-5.5", model: authored });
+});
+
+test("OpenAI availability sync retains models absent from a scoped response", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-openai-"));
+  const modelsDir = path.join(dir, "providers", "openai", "models");
+  await Bun.write(path.join(modelsDir, "gpt-existing.toml"), [
+    'name = "Existing GPT"',
+    'release_date = "2026-01-01"',
+    'last_updated = "2026-01-01"',
+    "attachment = false",
+    "reasoning = false",
+    "tool_call = true",
+    "open_weights = false",
+    "",
+    "[cost]",
+    "input = 1",
+    "output = 2",
+    "",
+    "[limit]",
+    "context = 1_000",
+    "output = 100",
+    "",
+    "[modalities]",
+    'input = ["text"]',
+    'output = ["text"]',
+    "",
+  ].join("\n"));
+
+  try {
+    const result = await syncProvider({
+      ...openai,
+      modelsDir,
+      async fetchModels() {
+        return {
+          object: "list",
+          data: [{ id: "gpt-scoped", object: "model", created: 1, owned_by: "system" }],
+        };
+      },
+    });
+    expect(result.deleted).toBe(0);
+    expect(result.unchanged).toBe(1);
+    expect(await Bun.file(path.join(modelsDir, "gpt-existing.toml")).exists()).toBe(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 function digitalOceanModel(overrides: Partial<DigitalOceanSourceModel> = {}): DigitalOceanSourceModel {
