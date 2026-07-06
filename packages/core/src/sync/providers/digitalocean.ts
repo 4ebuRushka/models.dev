@@ -211,10 +211,7 @@ export function parseDigitalOceanModels(raw: unknown): DigitalOceanSourceModel[]
 
 function isManagedTextModel(model: DigitalOceanModel) {
   const output = normalizeModalities(model.modalities?.output ?? [], []);
-  return output.length === 1
-    && output[0] === "text"
-    && model.type !== "embedding"
-    && model.type !== "reranking";
+  return output.includes("text") && model.type !== "embedding" && model.type !== "reranking";
 }
 
 function pricingName(value: string) {
@@ -409,7 +406,7 @@ export function buildDigitalOceanModel(
     tool_call: z.boolean(),
     open_weights: z.boolean(),
     cost: z.object({ input: z.number(), output: z.number() }),
-    limit: z.object({ context: z.number().positive(), output: z.number().positive() }),
+    limit: z.object({ context: z.number().nonnegative(), output: z.number().nonnegative() }),
     modalities: z.object({ input: z.array(z.string()).min(1), output: z.array(z.string()).min(1) }),
   }).safeParse(values);
   if (!required.success) {
