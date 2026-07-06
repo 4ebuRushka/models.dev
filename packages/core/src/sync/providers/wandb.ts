@@ -265,29 +265,14 @@ function inferFamily(modelID: string, modelName: string): string | undefined {
     }
   }
 
-  for (const family of sortedFamilies) {
-    if (isSubsequence(modelID, family) || isSubsequence(modelName, family)) {
-      return family;
-    }
-  }
-
+  // Deliberately no fuzzy/subsequence fallback: matching a family by scattered
+  // letters produces false positives (e.g. "Mellum2-12B-A2.5B" -> "jamba"). If
+  // no family name is a substring of the id or name, omit the family instead.
   return undefined;
 }
 
 function includesIgnoreCase(target: string, value: string) {
   return target.toLowerCase().includes(value.toLowerCase());
-}
-
-function isSubsequence(target: string, value: string) {
-  const targetLower = target.toLowerCase();
-  const valueLower = value.toLowerCase();
-  let valueIndex = 0;
-
-  for (const character of targetLower) {
-    if (character === valueLower[valueIndex]) valueIndex++;
-  }
-
-  return valueIndex === valueLower.length;
 }
 
 function resolveWandbBaseModel(id: string) {
