@@ -4,7 +4,6 @@ import { AuthoredModel } from "../../schema.js";
 import type { ExistingModel, SyncProvider, SyncedBaseModel, SyncedModel } from "../index.js";
 
 const API_ENDPOINT = "https://api.openai.com/v1/models";
-const MINIMUM_FIRST_PARTY_MODELS = 10;
 
 export const OpenAIModel = z.object({
   id: z.string().min(1),
@@ -49,14 +48,7 @@ export async function fetchOpenAIModels(key: string, fetcher: typeof fetch = fet
     throw new Error(`OpenAI models request failed: ${response.status} ${response.statusText}`);
   }
 
-  const raw: unknown = await response.json();
-  const models = parseOpenAIModels(raw);
-  if (models.length < MINIMUM_FIRST_PARTY_MODELS) {
-    throw new Error(
-      `OpenAI models response contained only ${models.length} first-party models; refusing to delete catalog entries`,
-    );
-  }
-  return raw;
+  return response.json();
 }
 
 export const openai = {
@@ -64,6 +56,7 @@ export const openai = {
   name: "OpenAI",
   modelsDir: "providers/openai/models",
   skipCreates: true,
+  deleteMissing: false,
   sourceID(model) {
     return model.id;
   },
