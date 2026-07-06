@@ -237,6 +237,12 @@ test("filters unmanaged DigitalOcean models and joins pricing names", () => {
     models: [
       digitalOceanModel({ id: "kimi-k2.5", name: "Kimi K2", pricing: undefined }),
       digitalOceanModel({
+        id: "openai-gpt-image-1.5",
+        name: "GPT Image 1.5",
+        modalities: { input: ["text", "image"], output: ["text", "image"] },
+        pricing: undefined,
+      }),
+      digitalOceanModel({
         id: "bge-m3",
         name: "BGE M3",
         type: "embedding",

@@ -211,7 +211,10 @@ export function parseDigitalOceanModels(raw: unknown): DigitalOceanSourceModel[]
 
 function isManagedTextModel(model: DigitalOceanModel) {
   const output = normalizeModalities(model.modalities?.output ?? [], []);
-  return output.includes("text") && model.type !== "embedding" && model.type !== "reranking";
+  return output.length === 1
+    && output[0] === "text"
+    && model.type !== "embedding"
+    && model.type !== "reranking";
 }
 
 function pricingName(value: string) {
