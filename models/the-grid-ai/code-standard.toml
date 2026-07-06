@@ -1,0 +1,28 @@
+name = "Code Standard"
+description = "Price-optimized models for rapid autocomplete, linting, high-frequency suggestions, and batch edits. Any model that meets the contract spec can serve your request."
+release_date = "2026-05-04"
+last_updated = "2026-07-06"
+attachment = false
+reasoning = true
+temperature = true
+tool_call = true
+structured_output = true
+open_weights = false
+
+[limit]
+context = 128_000
+input = 120_000
+output = 16_000
+
+[modalities]
+input = ["text"]
+output = ["text"]
+
+[[links]]
+label = "contract spec"
+url = "https://thegrid.ai/docs/instrument-specifications/current-instruments"
+type = "docs"
+
+[[links]]
+label = "market"
+url = "https://app.thegrid.ai/trading/market-c7c68506-9830-4699-8c53-8e3d167fa04b"

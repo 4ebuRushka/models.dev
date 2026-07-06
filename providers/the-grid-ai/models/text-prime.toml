@@ -1,20 +1,2 @@
-name = "Text Prime"
-description = "Reasoning model for deliberate analysis, multi-step problem solving, and tool use"
-release_date = "2026-02-26"
-last_updated = "2026-05-19"
-# reflects last update to contract specification: https://thegrid.ai/docs/instrument-specifications/current-instruments
-attachment = false
-reasoning = true
-reasoning_options = []
-temperature = true
-tool_call = true
-structured_output = true
-open_weights = false
-
-[limit]
-context = 128_000
-output = 30_000
-
-[modalities]
-input = ["text"]
-output = ["text"]
+base_model = "the-grid-ai/text-prime"
+reasoning_options = [{ type = "effort", values = ["low", "medium", "high"] }]

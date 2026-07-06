@@ -1,0 +1,28 @@
+name = "Agent Standard"
+description = "Price-optimized models for fast tool calls, simple agent loops, high-throughput automation, and orchestration. Any model that meets the contract spec can serve your request."
+release_date = "2026-05-04"
+last_updated = "2026-07-06"
+attachment = false
+reasoning = true
+temperature = true
+tool_call = true
+structured_output = true
+open_weights = false
+
+[limit]
+context = 128_000
+input = 120_000
+output = 16_000
+
+[modalities]
+input = ["text"]
+output = ["text"]
+
+[[links]]
+label = "contract spec"
+url = "https://thegrid.ai/docs/instrument-specifications/current-instruments"
+type = "docs"
+
+[[links]]
+label = "market"
+url = "https://app.thegrid.ai/trading/market-0b9d4bf5-b8aa-4f18-85f7-fe0765b92334"
