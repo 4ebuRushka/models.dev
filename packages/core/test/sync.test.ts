@@ -232,6 +232,40 @@ test("skips existing dedicated-only DigitalOcean models without token pricing", 
   expect(translated).toBeUndefined();
 });
 
+test("syncs existing DigitalOcean image models with zero token limits", () => {
+  const existing = {
+    name: "GPT Image 1.5",
+    description: "Image generation model",
+    family: "gpt-image" as const,
+    release_date: "2025-11-25",
+    last_updated: "2025-11-25",
+    attachment: true,
+    reasoning: false,
+    temperature: false,
+    tool_call: false,
+    open_weights: false,
+    cost: { input: 5, output: 10 },
+    limit: { context: 0, output: 0 },
+    modalities: { input: ["text" as const, "image" as const], output: ["image" as const] },
+  };
+  const translated = digitalocean.translateModel(digitalOceanModel({
+    id: "openai-gpt-image-1.5",
+    name: "GPT Image 1.5",
+    context_window: undefined,
+    modalities: { input: ["text", "image"], output: ["text", "image"] },
+    settings: [],
+    pricing: { input: 6, output: 12 },
+  }), {
+    existing: () => existing,
+    authored: () => existing,
+  });
+
+  expect(translated?.model).toMatchObject({
+    cost: { input: 6, output: 12 },
+    limit: { context: 0, output: 0 },
+  });
+});
+
 test("filters unmanaged DigitalOcean models and joins pricing names", () => {
   const models = parseDigitalOceanModels({
     models: [
