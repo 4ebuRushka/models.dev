@@ -141,12 +141,11 @@ export const digitalocean = {
     const existing = context.existing(model.id);
     const contextWindow = number(model.context_window);
     const outputLimit = model.settings?.find((setting) => setting.name === "max_tokens")?.max;
+    if (model.pricing?.input === undefined || model.pricing.output === undefined) return undefined;
     if (
       existing === undefined
       && (
-        model.pricing?.input === undefined
-        || model.pricing.output === undefined
-        || contextWindow === undefined
+        contextWindow === undefined
         || contextWindow <= 0
         || outputLimit === undefined
         || outputLimit <= 0
@@ -406,6 +405,7 @@ export function buildDigitalOceanModel(
     reasoning: z.boolean(),
     tool_call: z.boolean(),
     open_weights: z.boolean(),
+    cost: z.object({ input: z.number(), output: z.number() }),
     limit: z.object({ context: z.number().positive(), output: z.number().positive() }),
     modalities: z.object({ input: z.array(z.string()).min(1), output: z.array(z.string()).min(1) }),
   }).safeParse(values);
