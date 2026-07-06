@@ -1,14 +1,5 @@
-name = "GPT-OSS 20B"
-description = "Open-weight GPT model for self-hosted reasoning and instruction-following workloads"
-family = "gpt"
-release_date = "2025-08-05"
-last_updated = "2025-08-05"
-attachment = false
-reasoning = true
-temperature = true
-tool_call = true
+base_model = "openai/gpt-oss-20b"
 structured_output = false
-open_weights = true
 reasoning_options = []
 
 [cost]
@@ -16,9 +7,4 @@ input = 0.18
 output = 0.29
 
 [limit]
-context = 131_072
 output = 8_192
-
-[modalities]
-input = ["text"]
-output = ["text"]
