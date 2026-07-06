@@ -201,6 +201,37 @@ test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
   });
 });
 
+test("skips existing dedicated-only DigitalOcean models without token pricing", () => {
+  const existing = {
+    name: "Mistral 7B Instruct v0.3",
+    description: "Mistral model for multilingual chat and dedicated inference",
+    family: "mistral" as const,
+    release_date: "2024-05-22",
+    last_updated: "2024-05-22",
+    attachment: false,
+    reasoning: false,
+    temperature: true,
+    tool_call: true,
+    open_weights: true,
+    limit: { context: 32_768, output: 32_768 },
+    modalities: { input: ["text" as const], output: ["text" as const] },
+  };
+  const translated = digitalocean.translateModel(digitalOceanModel({
+    id: "mistral-7b-instruct-v0.3",
+    name: "Mistral 7B Instruct v0.3",
+    thinking: false,
+    context_window: 32_768,
+    modalities: { input: ["text"], output: ["text"] },
+    settings: [{ name: "max_tokens", max: 8_192 }],
+    pricing: undefined,
+  }), {
+    existing: () => existing,
+    authored: () => existing,
+  });
+
+  expect(translated).toBeUndefined();
+});
+
 test("filters unmanaged DigitalOcean models and joins pricing names", () => {
   const models = parseDigitalOceanModels({
     models: [

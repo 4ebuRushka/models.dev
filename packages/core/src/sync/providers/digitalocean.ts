@@ -141,12 +141,11 @@ export const digitalocean = {
     const existing = context.existing(model.id);
     const contextWindow = number(model.context_window);
     const outputLimit = model.settings?.find((setting) => setting.name === "max_tokens")?.max;
+    if (model.pricing?.input === undefined || model.pricing.output === undefined) return undefined;
     if (
       existing === undefined
       && (
-        model.pricing?.input === undefined
-        || model.pricing.output === undefined
-        || contextWindow === undefined
+        contextWindow === undefined
         || contextWindow <= 0
         || outputLimit === undefined
         || outputLimit <= 0
