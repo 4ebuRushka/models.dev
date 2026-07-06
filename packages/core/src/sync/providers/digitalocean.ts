@@ -406,7 +406,6 @@ export function buildDigitalOceanModel(
     reasoning: z.boolean(),
     tool_call: z.boolean(),
     open_weights: z.boolean(),
-    cost: z.object({ input: z.number(), output: z.number() }),
     limit: z.object({ context: z.number().positive(), output: z.number().positive() }),
     modalities: z.object({ input: z.array(z.string()).min(1), output: z.array(z.string()).min(1) }),
   }).safeParse(values);
