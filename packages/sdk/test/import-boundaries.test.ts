@@ -12,7 +12,6 @@
 
 import { expect, test } from "bun:test"
 import path from "node:path"
-import { ensureGenerated } from "../script/generate.ts"
 
 const src = path.join(import.meta.dirname, "..", "src")
 
@@ -46,14 +45,13 @@ test("root client bundles with no package imports and no snapshot", async () => 
 })
 
 test("root barrel only re-exports zero-dependency local modules", async () => {
-  const allowed = ["./client.js", "./error.js", "./generated.js", "./types.js", "./version.js"]
+  const allowed = ["./client.js", "./error.js", "./generated.js", "./types.js"]
   for (const specifier of await specifiers("index.ts")) {
     expect(allowed).toContain(specifier)
   }
 })
 
 test("snapshot entrypoint is self-contained", async () => {
-  await ensureGenerated()
   const { imports } = await bundle(path.join(src, "snapshot.js"))
   expect(imports).toEqual([])
 })

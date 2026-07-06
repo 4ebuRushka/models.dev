@@ -101,7 +101,7 @@ program.pipe(Effect.provide(Models.layer().pipe(Layer.provide(FetchHttpClient.la
 
 ## Types
 
-All data types are exported from the root (and re-exported from `/effect`): `Provider`, `Model`, `ModelMetadata`, `Catalog`, `Cost`, `Limit`, `ReasoningOption`, `KnownProviderID`, and friends. `KNOWN_PROVIDER_IDS` is a runtime list of provider IDs known at release time.
+All data types are exported from the root (and re-exported from `/effect`): `Provider`, `Model`, `ModelMetadata`, `Catalog`, `Cost`, `Limit`, `ReasoningOption`, and friends.
 
 ## Contributing
 

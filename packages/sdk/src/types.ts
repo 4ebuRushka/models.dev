@@ -1,9 +1,9 @@
 // Hand-written mirrors of the Zod schemas in @models.dev/core (src/schema.ts).
 // Kept intentionally free of zod so the published .d.ts has zero dependencies.
-// Drift against the schemas is caught by test/types.test.ts, which asserts
+// Drift against the schemas is caught by test/types.ts, which asserts
 // exact mutual assignability with the z.infer types from @models.dev/core.
 
-export type { KnownProviderID, ModelFamily } from "./generated.js"
+export type { ModelFamily } from "./generated.js"
 import type { ModelFamily } from "./generated.js"
 
 /** Any JSON-serializable value. */

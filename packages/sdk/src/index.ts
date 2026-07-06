@@ -1,6 +1,4 @@
 export * as Models from "./client.js"
 export type { ClientOptions, HeadersInput, ModelsClient, RequestOptions } from "./client.js"
 export { ModelsDevError, type ModelsDevErrorReason } from "./error.js"
-export { KNOWN_PROVIDER_IDS } from "./generated.js"
 export type * from "./types.js"
-export { VERSION } from "./version.js"

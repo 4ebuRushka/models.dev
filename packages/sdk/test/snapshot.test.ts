@@ -1,8 +1,6 @@
 import { expect, test } from "bun:test"
-import { ensureGenerated } from "../script/generate.ts"
 
 test("snapshot exports providers, models, generatedAt, and a default catalog", async () => {
-  await ensureGenerated()
   const snapshot = await import("../src/snapshot.js")
   expect(Object.keys(snapshot.providers).length).toBeGreaterThan(100)
   expect(Object.keys(snapshot.models).length).toBeGreaterThan(100)

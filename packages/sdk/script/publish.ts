@@ -5,7 +5,7 @@
 // - `--if-changed` (scheduled data releases) skips publishing when the
 //   freshly generated snapshot payload is byte-identical to the one inside
 //   the currently published tarball;
-// - package.json and src/version.ts are restored after publishing.
+// - package.json is restored after publishing.
 //
 // Auth: npm Trusted Publishing (OIDC) in CI — no token needed once the
 // package is linked to this repo+workflow on npmjs.com. `--provenance` is
@@ -20,7 +20,6 @@ import { loadCatalog, snapshotPayload } from "./generate.ts"
 const pkg = path.join(import.meta.dirname, "..")
 const packageName = "@opencode-ai/models"
 const packageJsonPath = path.join(pkg, "package.json")
-const versionTsPath = path.join(pkg, "src", "version.ts")
 
 const bumpArg = process.argv.find((argument) => argument.startsWith("--bump="))?.slice("--bump=".length) ?? "patch"
 const ifChanged = process.argv.includes("--if-changed")
@@ -59,9 +58,8 @@ async function publishedSnapshotLine(): Promise<string | undefined> {
   }
 }
 
-const catalog = await loadCatalog()
-
 if (ifChanged) {
+  const catalog = await loadCatalog()
   const fresh = `const data = /* @__PURE__ */ JSON.parse(${JSON.stringify(snapshotPayload(catalog))})`
   const published = await publishedSnapshotLine()
   if (published === fresh) {
@@ -77,11 +75,8 @@ console.log(`Publishing ${packageName}@${next} (${bumpArg} bump from ${current})
 
 const packageJsonText = await Bun.file(packageJsonPath).text()
 const packageJson = JSON.parse(packageJsonText)
-const versionTs = await Bun.file(versionTsPath).text()
 
 try {
-  await Bun.write(versionTsPath, versionTs.replace('"0.0.0"', JSON.stringify(next)))
-
   packageJson.version = next
   await Bun.write(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n")
 
@@ -92,5 +87,5 @@ try {
   if (output !== undefined) await appendFile(output, `version=${next}\n`)
   console.log(`Published ${packageName}@${next}`)
 } finally {
-  await Promise.all([Bun.write(packageJsonPath, packageJsonText), Bun.write(versionTsPath, versionTs)])
+  await Bun.write(packageJsonPath, packageJsonText)
 }
