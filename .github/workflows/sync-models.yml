@@ -89,7 +89,6 @@ jobs:
           BRANCH: automation/sync-models-${{ matrix.provider }}
           LABELS: automation,model-sync,provider:${{ matrix.provider }}
           TITLE: "chore(sync): update ${{ matrix.name }} model catalog"
-          NOTICE_TITLE: "chore(sync): review ${{ matrix.name }} model catalog notices"
         run: |
           tee -a "$GITHUB_STEP_SUMMARY" < .sync/model-sync-report.md >/dev/null
 
@@ -99,17 +98,6 @@ jobs:
             gh label create "$label" --color "0E8A16" --description "Automated model catalog sync" >/dev/null 2>&1 || true
             label_args+=(--label "$label")
           done
-
-          notice_number="$(gh issue list --state open --search "\"$NOTICE_TITLE\" in:title" --json number --jq '.[0].number')"
-          if grep -q '^## Notices$' .sync/model-sync-report.md; then
-            if [ -n "$notice_number" ]; then
-              gh issue edit "$notice_number" --body-file .sync/model-sync-report.md
-            else
-              gh issue create --title "$NOTICE_TITLE" --body-file .sync/model-sync-report.md "${label_args[@]}"
-            fi
-          elif [ -n "$notice_number" ]; then
-            gh issue close "$notice_number" --comment "The latest sync completed without notices."
-          fi
 
           if [ -z "$(git status --porcelain -- models providers)" ]; then
             echo "No model catalog changes found."
