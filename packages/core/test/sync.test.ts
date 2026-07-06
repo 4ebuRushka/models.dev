@@ -10,6 +10,14 @@ import {
   type AnthropicModel,
 } from "../src/sync/providers/anthropic.js";
 import { buildDeepInfraModel, type DeepInfraModel } from "../src/sync/providers/deepinfra.js";
+import {
+  buildDigitalOceanModel,
+  digitalocean,
+  fetchDigitalOceanModels,
+  parseDigitalOceanModels,
+  resolveDigitalOceanBaseModel,
+  type DigitalOceanSourceModel,
+} from "../src/sync/providers/digitalocean.js";
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 
@@ -118,6 +126,161 @@ test("labels Anthropic aliases as latest", () => {
   }), undefined, "anthropic/claude-sonnet-5");
 
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
+function digitalOceanModel(overrides: Partial<DigitalOceanSourceModel> = {}): DigitalOceanSourceModel {
+  return {
+    id: "anthropic-claude-4.6-sonnet",
+    name: "Claude Sonnet 4.6",
+    lifecycle_status: "available",
+    type: "chat",
+    thinking: true,
+    context_window: 1_000_000,
+    modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+    settings: [{ name: "max_tokens", max: 64_000 }],
+    created_at: "2026-02-17T00:00:00Z",
+    pricing: {
+      input: 3,
+      output: 15,
+      inputOver200k: 6,
+      outputOver200k: 22.5,
+    },
+    ...overrides,
+  };
+}
+
+test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel(), {
+    name: "Claude Sonnet 4.6",
+    description: "Curated DigitalOcean description",
+    family: "claude-sonnet",
+    release_date: "2026-02-17",
+    last_updated: "2026-03-13",
+    attachment: true,
+    reasoning: true,
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    temperature: true,
+    tool_call: true,
+    open_weights: false,
+    status: "beta",
+    cost: {
+      input: 2,
+      output: 10,
+      cache_read: 0.3,
+      cache_write: 3.75,
+      tiers: [{
+        tier: { type: "context", size: 200_000 },
+        input: 4,
+        output: 15,
+        cache_read: 0.6,
+        cache_write: 7.5,
+      }],
+    },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+  });
+
+  expect(model).toMatchObject({
+    description: "Curated DigitalOcean description",
+    last_updated: "2026-03-13",
+    status: "beta",
+    cost: {
+      input: 3,
+      output: 15,
+      cache_read: 0.3,
+      cache_write: 3.75,
+      tiers: [{
+        tier: { type: "context", size: 200_000 },
+        input: 6,
+        output: 22.5,
+        cache_read: 0.6,
+        cache_write: 7.5,
+      }],
+    },
+    limit: { context: 1_000_000, output: 64_000 },
+  });
+});
+
+test("filters unmanaged DigitalOcean models and joins pricing names", () => {
+  const models = parseDigitalOceanModels({
+    models: [
+      digitalOceanModel({ id: "kimi-k2.5", name: "Kimi K2", pricing: undefined }),
+      digitalOceanModel({
+        id: "bge-m3",
+        name: "BGE M3",
+        type: "embedding",
+        modalities: { input: ["text"], output: ["text"] },
+        pricing: undefined,
+      }),
+    ],
+    pricing: [
+      { name: "Kimi K2.5 Input Tokens", slug: "input", model: "DigitalOcean-Hosted Models", price: { rate: 0.5 } },
+      { name: "Kimi K2.5 Output Tokens", slug: "output", model: "DigitalOcean-Hosted Models", price: { rate: 2.4 } },
+    ],
+  });
+
+  expect(models).toHaveLength(1);
+  expect(models[0]).toMatchObject({
+    id: "kimi-k2.5",
+    pricing: { input: 0.5, output: 2.4 },
+  });
+});
+
+test("resolves DigitalOcean IDs to canonical model metadata", () => {
+  expect(resolveDigitalOceanBaseModel("openai-gpt-5.5")).toBe("openai/gpt-5.5");
+  expect(resolveDigitalOceanBaseModel("deepseek-v4-pro")).toBe("deepseek/deepseek-v4-pro");
+});
+
+test("new DigitalOcean base models inherit intrinsic capabilities", () => {
+  const model = buildDigitalOceanModel(
+    digitalOceanModel({
+      id: "openai-gpt-5.5",
+      name: "GPT-5.5",
+      thinking: undefined,
+    }),
+    undefined,
+    "openai/gpt-5.5",
+  );
+
+  expect(model).toMatchObject({ base_model: "openai/gpt-5.5" });
+  expect(model).not.toHaveProperty("open_weights");
+  expect(model).not.toHaveProperty("family");
+  expect(model).not.toHaveProperty("release_date");
+  expect(model).not.toHaveProperty("knowledge");
+  expect(model).not.toHaveProperty("reasoning");
+  expect(model).not.toHaveProperty("temperature");
+});
+
+test("skips new DigitalOcean models with incomplete pricing or limits", () => {
+  const translated = digitalocean.translateModel(
+    digitalOceanModel({ pricing: undefined }),
+    { existing: () => undefined, authored: () => undefined },
+  );
+  expect(translated).toBeUndefined();
+});
+
+test("fetches every page of the DigitalOcean catalog", async () => {
+  const requests: string[] = [];
+  const first = digitalOceanModel({ id: "first", pricing: undefined });
+  const second = digitalOceanModel({ id: "second", pricing: undefined });
+  const fetcher = ((input: string | URL | Request) => {
+    const url = String(input);
+    requests.push(url);
+    if (url.includes("static-content")) {
+      return Promise.resolve(new Response(JSON.stringify({ gradient: { models: [] } })));
+    }
+    if (url.includes("?page=2")) {
+      return Promise.resolve(new Response(JSON.stringify({ models: [second] })));
+    }
+    return Promise.resolve(new Response(JSON.stringify({
+      models: [first],
+      links: { pages: { next: "https://api.digitalocean.com/v2/gen-ai/models?page=2" } },
+    })));
+  }) as typeof fetch;
+
+  const result = await fetchDigitalOceanModels("test-key", fetcher);
+  expect(result.models.map((model) => model.id)).toEqual(["first", "second"]);
+  expect(requests).toHaveLength(3);
 });
 
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {

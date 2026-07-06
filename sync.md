@@ -14,6 +14,7 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync cloudflare` syncs the Cloudflare sync group.
 - `bun models:sync direct` syncs every provider in the `direct` group.
 - `bun models:sync google` syncs only Google.
+- `bun models:sync digitalocean` syncs only DigitalOcean.
 - `bun models:sync xai` syncs only xAI.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
@@ -167,6 +168,14 @@ OVHcloud AI Endpoints is implemented in `packages/core/src/sync/providers/ovhclo
 - Authored `reasoning_options` are preserved for reasoning models. `Qwen3-32B` supports toggling reasoning through OVHcloud's documented `/no_think` prompt control. Both gpt-oss models support `low`, `medium`, and `high` reasoning effort. The Qwen3.5 models support `none`, `low`, `medium`, and `high`; Qwen3.6-27B additionally supports `minimal`.
 - `attachment` is derived from non-text `input_modalities`, and `open_weights` from the presence of `hugging_face_id`.
 - `release_date`/`last_updated` default to the catalog `created` timestamp but preserve any existing hand-authored dates; `knowledge`, `family`, `status`, `interleaved`, and `limit.input` are preserved when present.
+
+## DigitalOcean Notes
+
+- DigitalOcean is implemented in `packages/core/src/sync/providers/digitalocean.ts`.
+- Source endpoints: `https://api.digitalocean.com/v2/gen-ai/models` for catalog metadata and `https://www.digitalocean.com/api/static-content/v1/products` for pricing.
+- Required auth: `DIGITALOCEAN_API_TOKEN` or `DIGITALOCEAN_ACCESS_TOKEN`; the pricing endpoint is public.
+- The sync manages text-output models. Other model types and local models absent from the API are retained for manual lifecycle review.
+- Catalog metadata updates names, modalities, limits, and end-of-life status. Pricing updates input/output and long-context rates while preserving cache, reasoning, and audio prices that the pricing API does not expose.
 
 ## Vercel Status
 
