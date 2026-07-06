@@ -1,9 +1,11 @@
 # Included in subscription
 name = "Hermes Medium"
+description = "Compact GPT model for low-latency assistance and high-volume workloads"
 release_date = "2026-05-11"
 last_updated = "2026-05-11"
 attachment = false
 reasoning = true
+reasoning_options = []
 tool_call = true
 structured_output = true
 open_weights = false

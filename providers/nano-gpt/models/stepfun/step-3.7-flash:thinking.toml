@@ -1,9 +1,11 @@
 # Included in subscription
 name = "Step 3.7 Flash Thinking"
+description = "StepFun flash model for efficient multimodal reasoning, coding, and tool use"
 release_date = "2026-05-29"
 last_updated = "2026-05-29"
 attachment = true
 reasoning = true
+reasoning_options = []
 tool_call = true
 structured_output = true
 open_weights = false

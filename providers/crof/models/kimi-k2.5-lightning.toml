@@ -1,9 +1,11 @@
 name = "Kimi K2.5 (Lightning)"
-family = "kimi-k2.5"
+description = "Kimi multimodal agent model for visual understanding, coding, and planning"
+family = "kimi-k2"
 release_date = "2026-02-06"
 last_updated = "2026-02-06"
 attachment = false
 reasoning = true
+reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high"] }]
 temperature = false
 tool_call = true
 structured_output = true

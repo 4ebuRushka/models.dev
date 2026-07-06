@@ -1,14 +1,16 @@
 name = "LFM2.5-1.2B-Thinking (free)"
+description = "Free provider route for experiments, demos, and cost-sensitive chat workloads"
 family = "liquid"
 release_date = "2026-01-20"
 last_updated = "2026-01-20"
 attachment = false
 reasoning = true
 temperature = true
-tool_call = false
-structured_output = false
+tool_call = true
+structured_output = true
 knowledge = "2025-06"
 open_weights = true
+reasoning_options = []
 
 [cost]
 input = 0

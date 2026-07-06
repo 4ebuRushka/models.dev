@@ -1,6 +1,9 @@
 name = "gpt-oss-120b-fast"
+description = "Legacy model retained for compatibility with older integrations"
 attachment = false
 reasoning = true
+reasoning_options = [{ type = "effort", values = ["low", "medium", "high"] }]
+status = "deprecated"
 tool_call = true
 structured_output = true
 temperature = true
