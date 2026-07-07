@@ -1,4 +1,5 @@
 name = "Kimi K2.7 Code"
+description = "Kimi coding model for software agents, refactors, and repository reasoning"
 release_date = "2026-04-30"
 last_updated = "2026-04-30"
 attachment = false

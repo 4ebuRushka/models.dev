@@ -1,4 +1,5 @@
 name = "DiffusionGemma 26B-A4B IT"
+description = "Gemini model for general assistance, reasoning, and multimodal workflows"
 release_date = "2026-05-31"
 last_updated = "2026-05-31"
 attachment = false

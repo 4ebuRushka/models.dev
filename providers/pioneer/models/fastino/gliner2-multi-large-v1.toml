@@ -1,4 +1,5 @@
 name = "GLiNER2 Multi Large"
+description = "Flagship model for demanding analysis, coding, and production agent workflows"
 release_date = "2025-11-30"
 last_updated = "2025-11-30"
 attachment = false

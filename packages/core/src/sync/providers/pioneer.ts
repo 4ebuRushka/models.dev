@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { describeModel } from "../../describe.js";
 import type { ExistingModel, SyncProvider, SyncedModel } from "../index.js";
 
 const API_ENDPOINT = "https://api.pioneer.ai/v1/models";
@@ -110,6 +111,17 @@ function buildPioneerModel(
 
   return {
     name: existing?.name ?? model.display_name,
+    description: existing?.description ?? describeModel({
+      id: model.id,
+      providerId: "pioneer",
+      name: model.display_name,
+      family: existing?.family,
+      reasoning: supported(model, "thinking"),
+      tool_call: existing?.tool_call ?? true,
+      structured_output: supported(model, "structured_outputs") || undefined,
+      open_weights: existing?.open_weights ?? false,
+      modalities: { input, output: ["text"] },
+    }),
     family: existing?.family,
     release_date: existing?.release_date ?? dateFromModel(model),
     last_updated: existing?.last_updated ?? dateFromModel(model),
