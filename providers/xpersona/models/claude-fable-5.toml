@@ -1,6 +1,4 @@
 base_model = "anthropic/claude-fable-5"
-base_model_omit = ["cost.cache_write"]
-attachment = false
 interleaved = { field = "reasoning_content" }
 
 [[reasoning_options]]
