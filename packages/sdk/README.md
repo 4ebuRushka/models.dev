@@ -36,7 +36,7 @@ await client.providers({ signal: AbortSignal.timeout(5000) })
 
 Errors are a single `ModelsDevError` with `reason: "Transport" | "UnexpectedStatus" | "MalformedResponse"` and the underlying `cause`.
 
-## Snapshot
+### Snapshot
 
 A full copy of the database ships inside the package as a separate, tree-shakable entrypoint:
 
@@ -54,7 +54,7 @@ const providers = await client.providers().catch(async () => (await import("@ope
 
 The published snapshot is at most ~24h behind the live API (data releases are automated).
 
-## Effect
+### Effect
 
 An Effect-native client lives at `@opencode-ai/models/effect` (requires the optional peer dependency `effect`):
 
