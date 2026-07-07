@@ -104,16 +104,9 @@ export const wandb = {
   id: "wandb",
   name: "Weights & Biases",
   modelsDir: "providers/wandb/models",
-  deleteMissing: false,
+  deleteMissing: true,
   sourceID(model) {
     return model.id;
-  },
-  missingNotice(paths) {
-    if (paths.length === 0) return [];
-    return [
-      `${paths.length} local W&B models were absent from the W&B Inference catalog and were retained for manual lifecycle review.`,
-      `Retained local paths: ${paths.map((item) => `\`${item}\``).join(", ")}`,
-    ];
   },
   async fetchModels() {
     const response = await fetch(API_ENDPOINT);
