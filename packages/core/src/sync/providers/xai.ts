@@ -119,10 +119,6 @@ async function fetchTypedModels(key: string, endpoint: string) {
   return XAIModelList.parse(await response.json()).models;
 }
 
-function dateFromTimestamp(timestamp: number) {
-  return new Date(timestamp * 1000).toISOString().slice(0, 10);
-}
-
 type Modality = "text" | "audio" | "image" | "video" | "pdf";
 
 function modalities(values: string[] | undefined, fallback: Modality[]) {
@@ -179,15 +175,14 @@ export function buildXAIModel(model: XAIModel, existing: ExistingModel): SyncedM
     || toolCall === undefined
     || openWeights === undefined
     || limit === undefined
-    || (model.canonical_id !== undefined && releaseDate === undefined)
-    || (model.canonical_id !== undefined && lastUpdated === undefined)
+    || releaseDate === undefined
+    || lastUpdated === undefined
   ) {
     throw new Error(`xAI model ${model.id} has incomplete local TOML metadata required for sync`);
   }
 
   const input = modalities(model.input_modalities, existing.modalities?.input ?? ["text"]);
   const output = modalities(model.output_modalities, existing.modalities?.output ?? ["text"]);
-  const created = dateFromTimestamp(model.created);
 
   const values = {
     name,
@@ -207,8 +202,8 @@ export function buildXAIModel(model: XAIModel, existing: ExistingModel): SyncedM
       modalities: { input, output },
     }),
     family: existing.family,
-    release_date: model.canonical_id === undefined ? created : releaseDate!,
-    last_updated: model.canonical_id === undefined ? created : lastUpdated!,
+    release_date: releaseDate,
+    last_updated: lastUpdated,
     attachment: input.some((value) => value !== "text"),
     reasoning,
     reasoning_options: existing.reasoning_options,
