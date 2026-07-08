@@ -1,5 +1,5 @@
 name = "Kimi-K2.6"
-description = "An efficient and fast version of DeepSeek, which is designed to solve low-latency and high throughtput issues."
+description = "Multimodal Kimi workhorse for agent loops, coding tasks, and visual context"
 attachment = false      
 reasoning = true
 reasoning_options = [ { type = "effort", values = ["default"]} ]

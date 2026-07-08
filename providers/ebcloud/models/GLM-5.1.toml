@@ -1,5 +1,5 @@
 name = "GLM-5.1"
-description = "An efficient and fast version of DeepSeek, which is designed to solve low-latency and high throughtput issues."
+description = "Strong GLM coding model for agentic engineering, terminals, and repository generation"
 attachment = false      
 reasoning = true
 reasoning_options = [ { type = "effort", values = ["default"]} ]
