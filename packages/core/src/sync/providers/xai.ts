@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { describeModel } from "../../describe.js";
-import type { ExistingModel, SyncProvider, SyncedModel } from "../index.js";
+import type { ExistingModel, SyncProvider, SyncedFullModel, SyncedModel } from "../index.js";
+import { factorBaseModel } from "./openrouter.js";
 
 const API_BASE = "https://api.x.ai/v1";
 
@@ -188,9 +189,7 @@ export function buildXAIModel(model: XAIModel, existing: ExistingModel): SyncedM
   const output = modalities(model.output_modalities, existing.modalities?.output ?? ["text"]);
   const created = dateFromTimestamp(model.created);
 
-  return {
-    base_model: existing.base_model,
-    base_model_omit: existing.base_model_omit,
+  const values = {
     name,
     description: description ?? describeModel({
       id: model.id,
@@ -227,5 +226,9 @@ export function buildXAIModel(model: XAIModel, existing: ExistingModel): SyncedM
       output: limit.output,
     },
     modalities: { input, output },
-  };
+  } satisfies SyncedFullModel;
+
+  return existing.base_model === undefined
+    ? values
+    : factorBaseModel(existing.base_model, values, values.limit, existing.base_model_omit);
 }
