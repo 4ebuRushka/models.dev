@@ -15,7 +15,10 @@ concurrency:
 
 jobs:
   review:
-    if: github.repository == 'anomalyco/models.dev' && !github.event.pull_request.draft
+    if: |
+      github.repository == 'anomalyco/models.dev' &&
+      !github.event.pull_request.draft &&
+      !startsWith(github.event.pull_request.head.ref, 'automation/sync-models-')
     runs-on: ubuntu-latest
 
     steps:
