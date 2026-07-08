@@ -1,0 +1,23 @@
+name = "Gemini Omni Flash Preview"
+description = "Omni-modal model for text, vision, audio, and multimodal agent tasks"
+family = "gemini"
+release_date = "2026-06-30"
+last_updated = "2026-06-30"
+attachment = true
+reasoning = true
+temperature = true
+tool_call = false
+open_weights = false
+reasoning_options = []
+
+[cost]
+input = 1.5
+output = 9
+
+[limit]
+context = 1_000_000
+output = 57_920
+
+[modalities]
+input = ["text", "image", "pdf"]
+output = ["text"]
