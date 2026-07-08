@@ -1,29 +1,12 @@
-name = "anthropic--claude-4.8-opus"
-description = "Top Claude Opus tier for the hardest reasoning, coding, and long-horizon agents"
-family = "claude-opus"
-release_date = "2026-05-28"
-last_updated = "2026-05-28"
-attachment = true
-reasoning = true
-temperature = false
-tool_call = true
-structured_output = true
-open_weights = false
+base_model = "anthropic/claude-opus-4-8"
 
-[[reasoning_options]]
-type = "effort"
-values = ["low", "medium", "high", "xhigh", "max"]
+name = "anthropic--claude-4.8-opus"
+structured_output = true
+
+reasoning_options = [{ type = "effort", values = ["low", "medium", "high", "xhigh", "max"] }]
 
 [cost]
 input = 5.00
 output = 25.00
 cache_read = 0.50
 cache_write = 6.25
-
-[limit]
-context = 1_000_000
-output = 128_000
-
-[modalities]
-input = ["text", "image", "pdf"]
-output = ["text"]
