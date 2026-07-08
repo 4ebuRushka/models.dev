@@ -153,8 +153,8 @@ export function buildWandbModel(
     tool_call: model.tool_call,
     structured_output: model.structured_output === true,
     knowledge: model.knowledge ?? existing?.knowledge,
-    release_date: model.release_date,
-    last_updated: model.last_updated,
+    release_date: existing?.release_date ?? model.release_date,
+    last_updated: existing?.last_updated ?? model.last_updated,
     open_weights: model.open_weights,
     status: resolveStatus(existing, model.status),
     interleaved: model.reasoning

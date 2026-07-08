@@ -21,6 +21,7 @@ import {
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
+import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {
@@ -565,6 +566,28 @@ test("DeepInfra preserves descriptions for standalone models", () => {
 
   expect(model).toMatchObject({
     description: "Authored standalone model description",
+  });
+});
+
+test("W&B preserves curated model dates", () => {
+  const model: WandbModel = {
+    id: "example/model",
+    name: "Example Model",
+    description: "Example model used to verify W&B date preservation",
+    attachment: false,
+    reasoning: false,
+    tool_call: true,
+    release_date: "2024-07-01",
+    last_updated: "2024-07-01",
+    open_weights: true,
+  };
+
+  expect(buildWandbModel(model, {
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
+  })).toMatchObject({
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
   });
 });
 
