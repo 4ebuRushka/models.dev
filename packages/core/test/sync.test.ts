@@ -389,7 +389,7 @@ test("xAI sync factors inherited base model fields", () => {
   const model = buildXAIModel(
     {
       id: "grok-4.5",
-      created: Date.parse("2026-07-08T00:00:00Z") / 1000,
+      created: Date.parse("2026-06-29T00:00:00Z") / 1000,
       input_modalities: ["text", "image"],
       output_modalities: ["text"],
       prompt_text_token_price: 20_000,
@@ -434,6 +434,8 @@ test("xAI sync factors inherited base model fields", () => {
   });
   expect(model).not.toHaveProperty("name");
   expect(model).not.toHaveProperty("family");
+  expect(model).not.toHaveProperty("release_date");
+  expect(model).not.toHaveProperty("last_updated");
   expect(model).not.toHaveProperty("limit");
 });
 
