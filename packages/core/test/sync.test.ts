@@ -801,6 +801,32 @@ test("factors new LLM Gateway models against the canonical base metadata", () =>
   expect("modalities" in model).toBe(false);
 });
 
+test("factors aliased LLM Gateway routes against canonical metadata", () => {
+  const model = buildLLMGatewayModel(llmGatewayModel({
+    id: "glm-5-2",
+    name: "GLM-5.2 (260617)",
+    family: "bytedance",
+    context_length: 1_024_000,
+    pricing: {
+      prompt: "1.4e-6",
+      completion: "4.4e-6",
+      input_cache_read: "0.26e-6",
+    },
+  }), undefined);
+
+  expect(model).toEqual({
+    base_model: "zhipuai/glm-5.2",
+    cost: {
+      input: 1.4,
+      output: 4.4,
+      cache_read: 0.26,
+    },
+    limit: {
+      context: 1_024_000,
+    },
+  });
+});
+
 test("skips LLM Gateway base_model factoring when no metadata entry exists", () => {
   const model = buildLLMGatewayModel(
     llmGatewayModel({ id: "claude-fable-does-not-exist" }),
