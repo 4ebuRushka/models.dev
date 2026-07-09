@@ -201,10 +201,17 @@ export function buildOpenRouterModel(
   const canonical = existing?.base_model ?? baseModel ?? resolveCanonicalBaseModel(model.id);
 
   if (canonical !== undefined) {
+    const sourceModelID = model.id.split("/").slice(1).join("/").replace(/:free$/, "");
+    const canonicalModelID = canonical.split("/").slice(1).join("/");
+    const openAIProVariant = model.id.startsWith("openai/")
+      && sourceModelID.endsWith("-pro")
+      && sourceModelID.replace(/-pro$/, "") === canonicalModelID;
     return factorBaseModel(
       canonical,
       {
-        name: baseModel !== undefined || model.id.endsWith(":free") ? name : undefined,
+        name: baseModel !== undefined || model.id.endsWith(":free") || openAIProVariant
+          ? name
+          : undefined,
         description: existing?.description ?? describeModel({
           id: model.id,
           name,
@@ -445,6 +452,10 @@ function canonicalCandidates(provider: string, modelID: string) {
 
   if (provider === "minimax") {
     candidates.push(modelID.replace(/^minimax-m/, "MiniMax-M"));
+  }
+
+  if (provider === "openai") {
+    candidates.push(modelID.replace(/-pro$/, ""));
   }
 
   return [...new Set(candidates)];
