@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
 import {
+  anthropic,
   buildAnthropicModel,
   parseAnthropicPricing,
   type AnthropicModel,
@@ -21,6 +22,8 @@ import {
 import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
+import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
+import { buildXAIModel } from "../src/sync/providers/xai.js";
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {
@@ -127,6 +130,42 @@ test("labels Anthropic aliases as latest", () => {
   }), undefined, "anthropic/claude-sonnet-5");
 
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
+test("Anthropic sync preserves base model inheritance", () => {
+  const resolved = {
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+    description: "Flagship Claude model",
+    release_date: "2025-11-24",
+    last_updated: "2025-11-24",
+    attachment: true,
+    reasoning: true,
+    tool_call: true,
+    knowledge: "2025-05",
+    open_weights: false,
+    cost: { input: 5, output: 25 },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text" as const, "image" as const], output: ["text" as const] },
+  };
+  const translated = anthropic.translateModel(anthropicModel({
+    id: "claude-opus-4-5",
+    canonical_id: "claude-opus-4-5-20251101",
+    display_name: "Claude Opus 4.5",
+    created_at: "2025-11-24T00:00:00Z",
+    max_input_tokens: 200_000,
+    max_tokens: 64_000,
+  }), {
+    existing: () => resolved,
+    authored: () => ({ base_model: "anthropic/claude-opus-4-5" }),
+  });
+
+  expect(translated?.model).toMatchObject({
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+  });
+  expect(translated?.model).not.toHaveProperty("knowledge");
+  expect(translated?.model).not.toHaveProperty("release_date");
 });
 
 test("filters customer-owned OpenAI models from availability tracking", () => {
@@ -384,6 +423,60 @@ test("new DigitalOcean base models inherit intrinsic capabilities", () => {
   expect(model).not.toHaveProperty("temperature");
 });
 
+test("xAI sync factors inherited base model fields", () => {
+  const model = buildXAIModel(
+    {
+      id: "grok-4.5",
+      created: Date.parse("2026-06-29T00:00:00Z") / 1000,
+      input_modalities: ["text", "image"],
+      output_modalities: ["text"],
+      prompt_text_token_price: 20_000,
+      cached_prompt_text_token_price: 5_000,
+      completion_text_token_price: 60_000,
+      max_prompt_length: 500_000,
+    },
+    {
+      base_model: "xai/grok-4.5",
+      name: "Grok 4.5",
+      description: "xAI's latest Grok for chat, coding, agentic tools, and lower hallucination risk",
+      family: "grok",
+      release_date: "2026-07-08",
+      last_updated: "2026-07-08",
+      attachment: true,
+      reasoning: true,
+      reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+      temperature: true,
+      tool_call: true,
+      structured_output: true,
+      open_weights: false,
+      cost: {
+        input: 2,
+        output: 6,
+        cache_read: 0.5,
+        tiers: [{ tier: { size: 200_000 }, input: 4, output: 12, cache_read: 1 }],
+      },
+      limit: { context: 500_000, output: 500_000 },
+      modalities: { input: ["text", "image"], output: ["text"] },
+    },
+  );
+
+  expect(model).toMatchObject({
+    base_model: "xai/grok-4.5",
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    cost: {
+      input: 2,
+      output: 6,
+      cache_read: 0.5,
+      tiers: [{ tier: { size: 200_000 }, input: 4, output: 12, cache_read: 1 }],
+    },
+  });
+  expect(model).not.toHaveProperty("name");
+  expect(model).not.toHaveProperty("family");
+  expect(model).not.toHaveProperty("release_date");
+  expect(model).not.toHaveProperty("last_updated");
+  expect(model).not.toHaveProperty("limit");
+});
+
 test("skips new DigitalOcean models with incomplete pricing or limits", () => {
   const translated = digitalocean.translateModel(
     digitalOceanModel({ pricing: undefined }),
@@ -565,6 +658,28 @@ test("DeepInfra preserves descriptions for standalone models", () => {
 
   expect(model).toMatchObject({
     description: "Authored standalone model description",
+  });
+});
+
+test("W&B preserves curated model dates", () => {
+  const model: WandbModel = {
+    id: "example/model",
+    name: "Example Model",
+    description: "Example model used to verify W&B date preservation",
+    attachment: false,
+    reasoning: false,
+    tool_call: true,
+    release_date: "2024-07-01",
+    last_updated: "2024-07-01",
+    open_weights: true,
+  };
+
+  expect(buildWandbModel(model, {
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
+  })).toMatchObject({
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
   });
 });
 
