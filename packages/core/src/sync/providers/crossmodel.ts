@@ -212,11 +212,15 @@ function buildCrossModel(
       ? { ...base, tiers: contextTiers.length > 0 ? contextTiers : existing?.cost?.tiers }
       : existing?.cost;
 
-  const context = model.context_window_tokens ?? existing?.limit?.context ?? undefined;
+  // Every served model reports a context window; without one (and no existing
+  // value to fall back on) there's no valid limit to emit, so skip the model
+  // rather than fabricate a context. The guard also narrows `context` to number.
+  const context = model.context_window_tokens ?? existing?.limit?.context;
+  if (context === undefined) return undefined;
   const limit = {
-    context: context as number,
+    context,
     input: existing?.limit?.input,
-    output: model.max_output_tokens ?? existing?.limit?.output ?? (context as number),
+    output: model.max_output_tokens ?? existing?.limit?.output ?? context,
   };
 
   const modality = {
