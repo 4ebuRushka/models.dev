@@ -14,4 +14,4 @@ cache_read = 0.03
 cache_write = 0.3
 
 [modalities]
-input = ["text", "image", "video"]
+input = ["text", "image", "video", "audio"]
