@@ -258,8 +258,21 @@ function digitalOceanModel(overrides: Partial<DigitalOceanSourceModel> = {}): Di
   };
 }
 
-test("syncs DigitalOcean catalog limits and pricing while preserving curated tiers", () => {
-  const model = buildDigitalOceanModel(digitalOceanModel(), {
+test("syncs DigitalOcean catalog limits and extended pricing thresholds", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel({
+    pricing: {
+      input: 3,
+      output: 15,
+      cacheRead: 0.3,
+      extended: {
+        context: 272_000,
+        input: 6,
+        output: 22.5,
+        cacheRead: 0.6,
+        cacheWrite: 7.5,
+      },
+    },
+  }), {
     name: "Claude Sonnet 4.6",
     description: "Curated DigitalOcean description",
     family: "claude-sonnet",
@@ -297,9 +310,9 @@ test("syncs DigitalOcean catalog limits and pricing while preserving curated tie
       cache_read: 0.3,
       cache_write: 3.75,
       tiers: [{
-        tier: { type: "context", size: 200_000 },
-        input: 4,
-        output: 15,
+        tier: { type: "context", size: 272_000 },
+        input: 6,
+        output: 22.5,
         cache_read: 0.6,
         cache_write: 7.5,
       }],
@@ -400,7 +413,7 @@ test("filters unmanaged DigitalOcean models and joins catalog data by ID", () =>
         },
         pricing_detail: {
           variants: [{
-            tier: "MODEL_PRICING_TIER_EXTENDED_1M",
+            tier: "MODEL_PRICING_TIER_EXTENDED_272K",
             mode: "MODEL_BILLING_MODE_INTERACTIVE",
             prices: {
               input_price_per_million: 0.00000075,
@@ -426,15 +439,55 @@ test("filters unmanaged DigitalOcean models and joins catalog data by ID", () =>
       input: 0.375,
       output: 2.025,
       cacheRead: 0.203,
-      inputOver200k: 0.75,
-      outputOver200k: 3,
+      extended: {
+        context: 272_000,
+        input: 0.75,
+        output: 3,
+      },
     },
   });
 });
 
-test("syncs DigitalOcean reasoning efforts and lifecycle status", () => {
+test("maps DigitalOcean 1M catalog pricing to its 200K threshold", () => {
+  const models = parseDigitalOceanModels({
+    models: [digitalOceanModel({ pricing: undefined })],
+    catalog: [{
+      model_id: "anthropic-claude-4.6-sonnet",
+      name: "Claude Sonnet 4.6",
+      context_window: "1000000",
+      max_output_tokens: "64000",
+      availability: ["serverless"],
+      modalities: { input: ["text", "image"], output: ["text"] },
+      pricing: {
+        input_price_per_million: 0.000003,
+        output_price_per_million: 0.000015,
+      },
+      pricing_detail: {
+        variants: [{
+          tier: "MODEL_PRICING_TIER_EXTENDED_1M",
+          mode: "MODEL_BILLING_MODE_INTERACTIVE",
+          prices: {
+            input_price_per_million: 0.000006,
+            output_price_per_million: 0.0000225,
+          },
+        }],
+      },
+    }],
+  });
+
+  expect(models[0]?.pricing?.extended).toEqual({
+    context: 200_000,
+    input: 6,
+    output: 22.5,
+    cacheRead: undefined,
+    cacheWrite: undefined,
+  });
+});
+
+test("syncs DigitalOcean reasoning capability, efforts, and lifecycle status", () => {
   const model = buildDigitalOceanModel(digitalOceanModel({
     lifecycle_status: "deprecated",
+    thinking: false,
     reasoning_efforts: ["none", "low", "medium", "high", "max", "unsupported"],
   }), {
     name: "Claude Sonnet 4.6",
@@ -443,7 +496,7 @@ test("syncs DigitalOcean reasoning efforts and lifecycle status", () => {
     release_date: "2026-02-17",
     last_updated: "2026-03-13",
     attachment: true,
-    reasoning: true,
+    reasoning: false,
     reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
     temperature: true,
     tool_call: true,
@@ -456,6 +509,7 @@ test("syncs DigitalOcean reasoning efforts and lifecycle status", () => {
 
   expect(model).toMatchObject({
     status: "deprecated",
+    reasoning: true,
     reasoning_options: [{ type: "effort", values: ["none", "low", "medium", "high", "max"] }],
   });
 });
@@ -471,6 +525,7 @@ test("new DigitalOcean base models inherit intrinsic capabilities", () => {
       id: "openai-gpt-5.5",
       name: "GPT-5.5",
       thinking: undefined,
+      reasoning_efforts: undefined,
     }),
     undefined,
     "openai/gpt-5.5",
@@ -556,7 +611,17 @@ test("fetches every page of the DigitalOcean catalog", async () => {
     requests.push(url);
     if (url.includes("/catalog/first-catalog-id")) {
       return Promise.resolve(new Response(JSON.stringify({
-        data: { id: "first-catalog-id", model_id: "first", name: "First", availability: ["serverless"] },
+        data: {
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "Stale First Detail",
+          context_window: "50",
+          max_output_tokens: "10",
+          availability: ["dedicated"],
+          modalities: { input: ["text", "image"], output: ["text"] },
+          pricing: { input_price_per_million: 0.000009, output_price_per_million: 0.000009 },
+          pricing_detail: { variants: [] },
+        },
       })));
     }
     if (url.includes("/catalog/second-catalog-id")) {
@@ -564,15 +629,24 @@ test("fetches every page of the DigitalOcean catalog", async () => {
         data: { id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] },
       })));
     }
-    if (url.includes("/catalog") && url.includes("?page=2")) {
+    if (url.includes("/catalog") && url.includes("page=2")) {
       return Promise.resolve(new Response(JSON.stringify({
         data: [{ id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] }],
+        meta: { total: 2, page: 2, pages: 2 },
       })));
     }
     if (url.includes("/catalog")) {
       return Promise.resolve(new Response(JSON.stringify({
-        data: [{ id: "first-catalog-id", model_id: "first", name: "First", availability: ["serverless"] }],
-        links: { pages: { next: "https://api.digitalocean.com/v2/gen-ai/models/catalog?page=2" } },
+        data: [{
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "First",
+          context_window: "100",
+          max_output_tokens: "90",
+          availability: ["serverless"],
+          pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+        }],
+        meta: { total: 2, page: 1, pages: 2 },
       })));
     }
     if (url.includes("?page=2")) {
@@ -587,6 +661,15 @@ test("fetches every page of the DigitalOcean catalog", async () => {
   const result = await fetchDigitalOceanModels("test-key", fetcher);
   expect(result.models.map((model) => model.id)).toEqual(["first", "second"]);
   expect(result.catalog.map((model) => model.model_id)).toEqual(["first", "second"]);
+  expect(result.catalog[0]).toMatchObject({
+    name: "First",
+    context_window: "100",
+    max_output_tokens: "90",
+    availability: ["serverless"],
+    pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+    modalities: { input: ["text", "image"], output: ["text"] },
+    pricing_detail: { variants: [] },
+  });
   expect(requests).toHaveLength(6);
 });
 

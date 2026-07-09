@@ -72,6 +72,11 @@ const DigitalOceanCatalogResponse = z.object({
       next: z.string().nullable().optional(),
     }).passthrough().optional(),
   }).passthrough().optional(),
+  meta: z.object({
+    page: z.number().int().positive(),
+    pages: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+  }).passthrough().optional(),
 }).passthrough();
 
 const DigitalOceanCatalogDetailResponse = z.object({
@@ -91,10 +96,13 @@ interface ModelPricing {
   output?: number;
   cacheRead?: number;
   cacheWrite?: number;
-  inputOver200k?: number;
-  outputOver200k?: number;
-  cacheReadOver200k?: number;
-  cacheWriteOver200k?: number;
+  extended?: {
+    context: number;
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+  };
 }
 
 type ReasoningEffort =
@@ -221,7 +229,15 @@ async function fetchAllDigitalOceanCatalog(fetcher: typeof fetch) {
     const page = DigitalOceanCatalogResponse.parse(await response.json());
     catalog.push(...page.data);
     const next = page.links?.pages?.next;
-    url = next ? new URL(next, url).toString() : undefined;
+    if (next) {
+      url = new URL(next, url).toString();
+    } else if (page.meta !== undefined && page.meta.page < page.meta.pages) {
+      const nextPage = new URL(url);
+      nextPage.searchParams.set("page", String(page.meta.page + 1));
+      url = nextPage.toString();
+    } else {
+      url = undefined;
+    }
   }
 
   return Promise.all(catalog.map(async (model) => {
@@ -232,7 +248,12 @@ async function fetchAllDigitalOceanCatalog(fetcher: typeof fetch) {
     if (!response.ok) {
       throw new Error(`DigitalOcean catalog detail request failed: ${response.status} ${response.statusText}`);
     }
-    return DigitalOceanCatalogDetailResponse.parse(await response.json()).data;
+    const detail = DigitalOceanCatalogDetailResponse.parse(await response.json()).data;
+    return {
+      ...model,
+      modalities: detail.modalities ?? model.modalities,
+      pricing_detail: detail.pricing_detail ?? model.pricing_detail,
+    };
   }));
 }
 
@@ -276,17 +297,30 @@ function catalogPricing(model: DigitalOceanCatalogModel | undefined): ModelPrici
   const extended = model.pricing_detail?.variants.find((variant) =>
     variant.mode === "MODEL_BILLING_MODE_INTERACTIVE"
     && variant.tier?.startsWith("MODEL_PRICING_TIER_EXTENDED_") === true
-  )?.prices;
+  );
+  const extendedContext = pricingTierContext(extended?.tier);
   return {
     input: perMillion(model.pricing.input_price_per_million),
     output: perMillion(model.pricing.output_price_per_million),
     cacheRead: perMillion(model.pricing.cache_read_input_price_per_million),
     cacheWrite: perMillion(standard?.cache_write_5m_input_price_per_million),
-    inputOver200k: perMillion(extended?.input_price_per_million),
-    outputOver200k: perMillion(extended?.output_price_per_million),
-    cacheReadOver200k: perMillion(extended?.cache_read_input_price_per_million),
-    cacheWriteOver200k: perMillion(extended?.cache_write_5m_input_price_per_million),
+    extended: extendedContext === undefined || extended?.prices == null
+      ? undefined
+      : {
+          context: extendedContext,
+          input: perMillion(extended.prices.input_price_per_million),
+          output: perMillion(extended.prices.output_price_per_million),
+          cacheRead: perMillion(extended.prices.cache_read_input_price_per_million),
+          cacheWrite: perMillion(extended.prices.cache_write_5m_input_price_per_million),
+        },
   };
+}
+
+function pricingTierContext(tier: string | undefined) {
+  // Tier names describe capacity; Anthropic's 1M surcharge starts above 200K.
+  if (tier === "MODEL_PRICING_TIER_EXTENDED_1M") return 200_000;
+  if (tier === "MODEL_PRICING_TIER_EXTENDED_272K") return 272_000;
+  return undefined;
 }
 
 function perMillion(value: number | undefined) {
@@ -365,18 +399,18 @@ function cost(model: DigitalOceanSourceModel, existing: ExistingModel | undefine
   const longContext = existingTiers.find((tier) =>
     (tier.tier.type === undefined || tier.tier.type === "context") && tier.tier.size >= 200_000
   );
-  const hasLongContextPricing = model.pricing?.inputOver200k !== undefined
-    && model.pricing.outputOver200k !== undefined;
+  const extended = model.pricing?.extended;
+  const hasLongContextPricing = extended?.input !== undefined && extended.output !== undefined;
   const tiers = hasLongContextPricing
     ? [
         ...existingTiers.filter((tier) => tier !== longContext),
         {
-          tier: { type: "context" as const, size: longContext?.tier.size ?? 200_000 },
-          input: model.pricing!.inputOver200k!,
-          output: model.pricing!.outputOver200k!,
+          tier: { type: "context" as const, size: extended.context },
+          input: extended.input!,
+          output: extended.output!,
           reasoning: longContext?.reasoning,
-          cache_read: model.pricing?.cacheReadOver200k ?? longContext?.cache_read,
-          cache_write: model.pricing?.cacheWriteOver200k ?? longContext?.cache_write,
+          cache_read: extended.cacheRead ?? longContext?.cache_read,
+          cache_write: extended.cacheWrite ?? longContext?.cache_write,
         },
       ]
     : existingTiers;
@@ -414,8 +448,10 @@ export function buildDigitalOceanModel(
     output: maxTokens ?? existing?.limit?.output ?? 0,
   };
   const textOutput = output.includes("text") && !output.includes("image") && !output.includes("video");
-  const reasoning = existing?.reasoning
-    ?? (textOutput && ((model.thinking ?? false) || (model.reasoning_efforts?.length ?? 0) > 0));
+  const remoteReasoning = textOutput
+    && ((model.thinking ?? false) || (model.reasoning_efforts?.length ?? 0) > 0);
+  const providerReasoning = remoteReasoning ? true : existing?.reasoning;
+  const reasoning = providerReasoning ?? false;
   const reasoningOptions = reasoning ? reasoningOptionsFor(model, existing) : undefined;
   const modelStatus = status(model.lifecycle_status, existing?.status);
   const releaseDate = existing?.release_date ?? model.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
@@ -457,7 +493,7 @@ export function buildDigitalOceanModel(
       name: model.name,
       description: existing?.description,
       attachment: input.some((value) => value !== "text"),
-      reasoning: model.thinking ?? existing?.reasoning,
+      reasoning: providerReasoning,
       reasoning_options: reasoningOptions,
       temperature: existing?.temperature,
       tool_call: existing?.tool_call,
