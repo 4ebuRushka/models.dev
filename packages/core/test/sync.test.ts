@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
 import {
+  anthropic,
   buildAnthropicModel,
   parseAnthropicPricing,
   type AnthropicModel,
@@ -129,6 +130,42 @@ test("labels Anthropic aliases as latest", () => {
   }), undefined, "anthropic/claude-sonnet-5");
 
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
+});
+
+test("Anthropic sync preserves base model inheritance", () => {
+  const resolved = {
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+    description: "Flagship Claude model",
+    release_date: "2025-11-24",
+    last_updated: "2025-11-24",
+    attachment: true,
+    reasoning: true,
+    tool_call: true,
+    knowledge: "2025-05",
+    open_weights: false,
+    cost: { input: 5, output: 25 },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text" as const, "image" as const], output: ["text" as const] },
+  };
+  const translated = anthropic.translateModel(anthropicModel({
+    id: "claude-opus-4-5",
+    canonical_id: "claude-opus-4-5-20251101",
+    display_name: "Claude Opus 4.5",
+    created_at: "2025-11-24T00:00:00Z",
+    max_input_tokens: 200_000,
+    max_tokens: 64_000,
+  }), {
+    existing: () => resolved,
+    authored: () => ({ base_model: "anthropic/claude-opus-4-5" }),
+  });
+
+  expect(translated?.model).toMatchObject({
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+  });
+  expect(translated?.model).not.toHaveProperty("knowledge");
+  expect(translated?.model).not.toHaveProperty("release_date");
 });
 
 test("filters customer-owned OpenAI models from availability tracking", () => {
