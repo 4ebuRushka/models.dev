@@ -7,5 +7,4 @@ input = 0.24
 output = 0.96
 
 [limit]
-context = 196_608
 output = 196_608
