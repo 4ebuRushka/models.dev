@@ -19,7 +19,12 @@ import {
   resolveDigitalOceanBaseModel,
   type DigitalOceanSourceModel,
 } from "../src/sync/providers/digitalocean.js";
-import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
+import {
+  buildOpenRouterModel,
+  openrouter,
+  resolveCanonicalBaseModel,
+  type OpenRouterModel,
+} from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
 import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
@@ -729,6 +734,35 @@ test("syncs OpenRouter reasoning efforts from model metadata", () => {
       { type: "effort", values: ["max", "xhigh", "high", "medium", "low"] },
     ],
   });
+});
+
+test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
+  const model = buildOpenRouterModel(openRouterModel({
+    id: "openai/gpt-5.6-sol-pro",
+    name: "OpenAI: GPT-5.6 Sol Pro",
+    knowledge_cutoff: "2026-02-16",
+    context_length: 1_050_000,
+    top_provider: {
+      context_length: 1_050_000,
+      max_completion_tokens: 128_000,
+    },
+  }), undefined);
+
+  expect([
+    resolveCanonicalBaseModel("openai/gpt-5.6-luna-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-sol-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-terra-pro"),
+  ]).toEqual([
+    "openai/gpt-5.6-luna",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+  ]);
+  expect(model).toMatchObject({
+    base_model: "openai/gpt-5.6-sol",
+    name: "GPT-5.6 Sol Pro",
+  });
+  expect("family" in model).toBe(false);
+  expect("release_date" in model).toBe(false);
 });
 
 test("preserves authored OpenRouter reasoning options over model metadata", () => {
