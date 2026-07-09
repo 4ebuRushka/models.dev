@@ -46,6 +46,9 @@ export const ModelFamilyValues = [
   // Meta Llama
   "llama",
 
+  // Meta Muse
+  "muse",
+
   // Alibaba Qwen
   "qwen",
   "qwen3.5",
