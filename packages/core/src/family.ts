@@ -76,6 +76,9 @@ export const ModelFamilyValues = [
   "kimi-free",
   "kimi-thinking",
 
+  // Poolside Laguna
+  "laguna",
+
   // Mistral family
   "mistral",
   "mistral-large",
