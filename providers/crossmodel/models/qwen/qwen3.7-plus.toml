@@ -14,10 +14,10 @@ cache_write = 0.4
 
 [[cost.tiers]]
 tier = { type = "context", size = 256_000 }
-input = 0.94
+input = 0.96
 output = 3.75
-cache_read = 0.094
-cache_write = 0.18
+cache_read = 0.096
+cache_write = 1.2
 
 [modalities]
 input = ["text", "image", "video"]

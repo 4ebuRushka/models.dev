@@ -1,5 +1,16 @@
 base_model = "anthropic/claude-sonnet-5"
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle"
+
+[[reasoning_options]]
+type = "effort"
+values = ["low", "medium", "high"]
+
+[[reasoning_options]]
+type = "budget_tokens"
+min = 1_024
+max = 32_000
 
 [cost]
 input = 2
