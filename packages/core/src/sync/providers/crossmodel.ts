@@ -42,6 +42,8 @@ const PriceTier = z
   })
   .passthrough();
 
+type PriceTier = z.infer<typeof PriceTier>;
+
 export const CrossModelModel = z
   .object({
     id: z.string(),
@@ -120,6 +122,27 @@ function nonZeroPrice(micro: number | null | undefined): number | undefined {
   return value !== undefined && value > 0 ? value : undefined;
 }
 
+type TierCost = { input: number; output: number; cache_read?: number; cache_write?: number };
+
+// Convert one CrossModel price tier into a models.dev cost block. Cache fields
+// are emitted only when cache_read is a genuine discount (< input); a cache_read
+// at or above input means the model offers no caching benefit (e.g. OpenAI
+// "pro" tiers, which every other provider ships without cache pricing), so both
+// cache fields are dropped. Returns undefined when the tier lacks input/output.
+function tierCost(tier: PriceTier | undefined): TierCost | undefined {
+  const input = price(tier?.input_micro_per_1m);
+  const output = price(tier?.output_micro_per_1m);
+  if (input === undefined || output === undefined) return undefined;
+  const cost: TierCost = { input, output };
+  const cacheRead = nonZeroPrice(tier?.cache_read_micro_per_1m);
+  if (cacheRead !== undefined && cacheRead < input) {
+    cost.cache_read = cacheRead;
+    const cacheWrite = nonZeroPrice(tier?.cache_creation_micro_per_1m);
+    if (cacheWrite !== undefined) cost.cache_write = cacheWrite;
+  }
+  return cost;
+}
+
 type Modality = "text" | "audio" | "image" | "video" | "pdf";
 
 function modalities(values: string[] | undefined, fallback: Modality[]): Modality[] {
@@ -131,6 +154,15 @@ function modalities(values: string[] | undefined, fallback: Modality[]): Modalit
   return [...new Set(result.length > 0 ? result : fallback)];
 }
 
+// models.dev's reasoning_options effort enum (schema.ts ReasoningEffortValue).
+// Guarding against it means an unexpected upstream value is dropped instead of
+// silently producing a TOML that fails `validate`.
+const REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "default"] as const;
+type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+function isReasoningEffort(value: string): value is ReasoningEffort {
+  return (REASONING_EFFORTS as readonly string[]).includes(value);
+}
+
 // Project CrossModel's capabilities.reasoning onto models.dev reasoning_options.
 //   reasoning absent  -> undefined (non-reasoning model; option omitted)
 //   reasoning === {}  -> [] (model reasons, no verified user-selectable control)
@@ -140,8 +172,9 @@ function reasoningOptions(model: CrossModelModel): SyncedModel["reasoning_option
   if (reasoning === undefined) return undefined;
   const options: NonNullable<SyncedModel["reasoning_options"]> = [];
   if (reasoning.toggle === true) options.push({ type: "toggle" });
-  if (reasoning.effort !== undefined && reasoning.effort.length > 0) {
-    options.push({ type: "effort", values: reasoning.effort as never });
+  if (reasoning.effort !== undefined) {
+    const values = reasoning.effort.filter(isReasoningEffort);
+    if (values.length > 0) options.push({ type: "effort", values });
   }
   if (reasoning.budget_tokens !== undefined) {
     const budget: { type: "budget_tokens"; min?: number; max?: number } = { type: "budget_tokens" };
@@ -156,23 +189,27 @@ function buildCrossModel(
   model: CrossModelModel,
   existing: ExistingModel | undefined,
 ): SyncedModel | undefined {
-  // Base tier (smallest input-context threshold) drives the headline cost; any
-  // hand-authored context tiers on the existing entry are preserved as-is.
-  const tiers = model.pricing?.tiers ?? [];
-  const base = [...tiers].sort(
+  // CrossModel serves threshold-tiered pricing. The lowest-threshold tier is the
+  // headline [cost]; every higher tier maps to a [[cost.tiers]] context band
+  // (threshold -> tier size), so tier pricing stays fresh on each sync instead of
+  // being frozen at hand-authored values. Fall back to the existing tiers only
+  // when the API reports none.
+  const tiers = [...(model.pricing?.tiers ?? [])].sort(
     (a, b) => (a.threshold ?? 0) - (b.threshold ?? 0),
-  )[0];
-  const input = price(base?.input_micro_per_1m);
-  const output = price(base?.output_micro_per_1m);
+  );
+  const base = tierCost(tiers[0]);
+  const contextTiers = tiers
+    .slice(1)
+    .map((tier) => {
+      const c = tierCost(tier);
+      return c === undefined
+        ? undefined
+        : { tier: { type: "context" as const, size: tier.threshold ?? 0 }, ...c };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
   const cost =
-    input !== undefined && output !== undefined
-      ? {
-          input,
-          output,
-          cache_read: nonZeroPrice(base?.cache_read_micro_per_1m) ?? existing?.cost?.cache_read,
-          cache_write: nonZeroPrice(base?.cache_creation_micro_per_1m) ?? existing?.cost?.cache_write,
-          tiers: existing?.cost?.tiers,
-        }
+    base !== undefined
+      ? { ...base, tiers: contextTiers.length > 0 ? contextTiers : existing?.cost?.tiers }
       : existing?.cost;
 
   const context = model.context_window_tokens ?? existing?.limit?.context ?? undefined;
