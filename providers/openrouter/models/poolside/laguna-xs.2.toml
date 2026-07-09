@@ -1,7 +1,0 @@
-base_model = "poolside/laguna-xs.2"
-reasoning_options = []
-
-[cost]
-input = 0.1
-output = 0.2
-cache_read = 0.05

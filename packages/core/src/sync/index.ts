@@ -8,14 +8,18 @@ import { anthropic } from "./providers/anthropic.js";
 import { baseten } from "./providers/baseten.js";
 import { chutes } from "./providers/chutes.js";
 import { cloudflareWorkersAi } from "./providers/cloudflare-workers-ai.js";
+import { crossmodel } from "./providers/crossmodel.js";
 import { deepinfra } from "./providers/deepinfra.js";
+import { digitalocean } from "./providers/digitalocean.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
 import { llmgateway } from "./providers/llmgateway.js";
+import { openai } from "./providers/openai.js";
 import { openrouter } from "./providers/openrouter.js";
 import { ovhcloud } from "./providers/ovhcloud.js";
 import { vercel } from "./providers/vercel.js";
 import { venice } from "./providers/venice.js";
+import { wandb } from "./providers/wandb.js";
 import { xai } from "./providers/xai.js";
 
 const ExistingModelType = AuthoredModelShape.partial()
@@ -89,35 +93,43 @@ export const providers: {
   baseten: SyncProvider<any>;
   chutes: SyncProvider<any>;
   "cloudflare-workers-ai": SyncProvider<any>;
+  crossmodel: SyncProvider<any>;
   deepinfra: SyncProvider<any>;
+  digitalocean: SyncProvider<any>;
   google: SyncProvider<any>;
   huggingface: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
+  openai: SyncProvider<any>;
   openrouter: SyncProvider<any>;
   ovhcloud: SyncProvider<any>;
   vercel: SyncProvider<any>;
   venice: SyncProvider<any>;
+  wandb: SyncProvider<any>;
   xai: SyncProvider<any>;
 } = {
   anthropic,
   baseten,
   chutes,
   "cloudflare-workers-ai": cloudflareWorkersAi,
+  crossmodel,
   deepinfra,
+  digitalocean,
   google,
   huggingface,
   llmgateway,
+  openai,
   openrouter,
   ovhcloud,
   vercel,
   venice,
+  wandb,
   xai,
 };
 
 export const groups = {
-  aggregators: ["huggingface", "llmgateway", "openrouter", "vercel"],
+  aggregators: ["crossmodel", "huggingface", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
-  direct: ["anthropic", "baseten", "chutes", "deepinfra", "google", "ovhcloud", "venice", "xai"],
+  direct: ["anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "openai", "ovhcloud", "venice", "wandb", "xai"],
 } as const;
 
 type ProviderID = keyof typeof providers;
@@ -204,10 +216,13 @@ export async function syncProvider<SourceModel>(
     }
     const parsed = SyncedAuthoredModel.safeParse(stripUndefined({
       id: translated.id,
-      ...preserveReasoningOptions(
-        translatedModel,
+      ...preserveDescription(
+        preserveReasoningOptions(
+          translatedModel,
+          existing.get(relativePath)?.authored,
+          resolvedReasoning,
+        ),
         existing.get(relativePath)?.authored,
-        resolvedReasoning,
       ),
     }));
     if (!parsed.success) {
@@ -353,6 +368,12 @@ export function preserveBaseModel(model: SyncedModel, existing: ExistingModel | 
     base_model: existing.base_model,
     base_model_omit: existing.base_model_omit,
   };
+}
+
+export function preserveDescription(model: SyncedModel, existing: ExistingModel | undefined): SyncedModel {
+  if (model.description !== undefined) return model;
+  if (existing?.description === undefined) return model;
+  return { ...model, description: existing.description } as SyncedModel;
 }
 
 export function preserveReasoningOptions(
@@ -686,7 +707,12 @@ async function writeReport(target: string, results: SyncResult[]) {
 }
 
 function quote(value: string) {
-  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  return `"${value
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"')
+    .replaceAll("\n", "\\n")
+    .replaceAll("\r", "\\r")
+    .replaceAll("\t", "\\t")}"`;
 }
 
 // Preserve the leading comment block (header) authored at the top of a TOML file.
@@ -759,8 +785,10 @@ function sortReasoningValues(values: Array<string | null>) {
 export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
   const lines: string[] = [];
 
-  if (model.base_model !== undefined) lines.push(`base_model = ${quote(model.base_model)}`);
-  if (model.base_model_omit !== undefined) {
+  if ("base_model" in model && model.base_model !== undefined) {
+    lines.push(`base_model = ${quote(model.base_model)}`);
+  }
+  if ("base_model_omit" in model && model.base_model_omit !== undefined) {
     lines.push(`base_model_omit = [${model.base_model_omit.map(quote).join(", ")}]`);
   }
   if (model.name !== undefined) lines.push(`name = ${quote(model.name)}`);
@@ -805,8 +833,8 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
 
   if (model.cost !== undefined) {
     lines.push("", "[cost]");
-    lines.push(`input = ${formatNumber(model.cost.input)}`);
-    lines.push(`output = ${formatNumber(model.cost.output)}`);
+    if (model.cost.input !== undefined) lines.push(`input = ${formatNumber(model.cost.input)}`);
+    if (model.cost.output !== undefined) lines.push(`output = ${formatNumber(model.cost.output)}`);
     if (model.cost.reasoning !== undefined) {
       lines.push(`reasoning = ${formatNumber(model.cost.reasoning)}`);
     }
@@ -825,9 +853,11 @@ export function formatToml(model: z.infer<typeof SyncedAuthoredModel>) {
 
     for (const tier of model.cost.tiers ?? []) {
       lines.push("", "[[cost.tiers]]");
-      lines.push(`tier = { type = ${quote(tier.tier.type ?? "context")}, size = ${formatInteger(tier.tier.size)} }`);
-      lines.push(`input = ${formatNumber(tier.input)}`);
-      lines.push(`output = ${formatNumber(tier.output)}`);
+      if (tier.tier?.size !== undefined) {
+        lines.push(`tier = { type = ${quote(tier.tier.type ?? "context")}, size = ${formatInteger(tier.tier.size)} }`);
+      }
+      if (tier.input !== undefined) lines.push(`input = ${formatNumber(tier.input)}`);
+      if (tier.output !== undefined) lines.push(`output = ${formatNumber(tier.output)}`);
       if (tier.reasoning !== undefined) lines.push(`reasoning = ${formatNumber(tier.reasoning)}`);
       if (tier.cache_read !== undefined) lines.push(`cache_read = ${formatNumber(tier.cache_read)}`);
       if (tier.cache_write !== undefined) lines.push(`cache_write = ${formatNumber(tier.cache_write)}`);
