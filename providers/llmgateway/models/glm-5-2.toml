@@ -1,14 +1,4 @@
-name = "GLM-5.2 (260617)"
-description = "Flagship GLM model for hybrid reasoning, coding, and agentic engineering"
-family = "glm"
-release_date = "2026-06-17"
-last_updated = "2026-06-17"
-attachment = false
-reasoning = true
-temperature = true
-tool_call = true
-structured_output = false
-open_weights = false
+base_model = "zhipuai/glm-5.2"
 reasoning_options = []
 
 [cost]
@@ -18,8 +8,3 @@ cache_read = 0.26
 
 [limit]
 context = 1_024_000
-output = 1_024_000
-
-[modalities]
-input = ["text"]
-output = ["text"]
