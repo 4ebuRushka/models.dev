@@ -27,6 +27,7 @@ import {
 } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
+import { buildVercelModel, vercel } from "../src/sync/providers/vercel.js";
 import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
 import { buildXAIModel } from "../src/sync/providers/xai.js";
 
@@ -858,6 +859,33 @@ test("factors aliased LLM Gateway routes against canonical metadata", () => {
     limit: {
       context: 1_024_000,
     },
+  });
+});
+
+test("parses Vercel pricing tiers with an implicit zero minimum", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "openai/gpt-5.6-luna",
+      name: "GPT-5.6 Luna",
+      created: 1_780_963_200,
+      context_window: 1_050_000,
+      max_tokens: 128_000,
+      type: "language",
+      pricing: {
+        input: "0.000001",
+        output: "0.000006",
+        input_cache_read: "0.0000001",
+        input_cache_read_tiers: [
+          { cost: "0.0000001", max: 272_000 },
+          { cost: "0.0000002", min: 272_000 },
+        ],
+      },
+    }],
+  });
+
+  expect(model).toBeDefined();
+  expect(buildVercelModel(model!, undefined)).toMatchObject({
+    cost: { input: 1, output: 6, cache_read: 0.1 },
   });
 });
 
