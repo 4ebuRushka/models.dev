@@ -738,6 +738,23 @@ test("syncs OpenRouter reasoning efforts from model metadata", () => {
   });
 });
 
+test("uses OpenRouter model context when top provider reports a shorter context", () => {
+  const model = buildOpenRouterModel(openRouterModel({
+    context_length: 1_048_576,
+    top_provider: {
+      context_length: 32_000,
+      max_completion_tokens: 8_192,
+    },
+  }), undefined);
+
+  expect(model).toMatchObject({
+    limit: {
+      context: 1_048_576,
+      output: 8_192,
+    },
+  });
+});
+
 test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
   const model = buildOpenRouterModel(openRouterModel({
     id: "openai/gpt-5.6-sol-pro",

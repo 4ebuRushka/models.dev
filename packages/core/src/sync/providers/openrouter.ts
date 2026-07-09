@@ -178,7 +178,7 @@ export function buildOpenRouterModel(
   const reasoning_options = existing?.reasoning_options?.length
     ? existing.reasoning_options
     : openRouterReasoningOptions(model.reasoning) ?? existing?.reasoning_options;
-  const context = model.top_provider.context_length ?? model.context_length;
+  const context = model.context_length;
   const family = inferFamily(model, name);
   const releaseDate = dateFromTimestamp(model.created);
   const familyValue = existing?.family === "o" && family !== "o"
