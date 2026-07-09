@@ -181,10 +181,10 @@ OVHcloud AI Endpoints is implemented in `packages/core/src/sync/providers/ovhclo
 ## DigitalOcean Notes
 
 - DigitalOcean is implemented in `packages/core/src/sync/providers/digitalocean.ts`.
-- Source endpoints: `https://api.digitalocean.com/v2/gen-ai/models` for catalog metadata and `https://www.digitalocean.com/api/static-content/v1/products` for pricing.
-- Required auth: `DIGITALOCEAN_API_TOKEN` or `DIGITALOCEAN_ACCESS_TOKEN`; the pricing endpoint is public.
-- The sync manages text-output models. Other model types and local models absent from the API are retained for manual lifecycle review.
-- Catalog metadata updates names, modalities, limits, and end-of-life status. Pricing updates input/output and long-context rates while preserving cache, reasoning, and audio prices that the pricing API does not expose.
+- Source endpoints: `https://api.digitalocean.com/v2/gen-ai/models` for lifecycle and reasoning metadata, and the public `https://api.digitalocean.com/v2/gen-ai/models/catalog` for availability, modalities, limits, and pricing.
+- Required auth: `DIGITALOCEAN_API_TOKEN` or `DIGITALOCEAN_ACCESS_TOKEN` for the control-plane model endpoint; the model catalog is public.
+- The sync manages serverless text-output models. Other model types, dedicated-only models, and local models absent from the API are retained for manual lifecycle review.
+- Catalog pricing updates standard, cache-read, cache-write, and extended-context rates while preserving authored reasoning and audio prices.
 
 ## Vercel Status
 
