@@ -1,7 +1,6 @@
 <svg
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 28 28"
-  fill="none"
     >
       <g clipPath="url(#clip0_9396_9240)">
         <path
@@ -11,7 +10,7 @@
       </g>
       <defs>
         <clipPath id="clip0_9396_9240">
-          <rect width="28" height="28" fill="currentColor" />
+          <rect width="28" height="28" />
         </clipPath>
       </defs>
     </svg>
