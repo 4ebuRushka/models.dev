@@ -748,7 +748,15 @@ test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
     },
   }), undefined);
 
-  expect(resolveCanonicalBaseModel("openai/gpt-5.6-sol-pro")).toBe("openai/gpt-5.6-sol");
+  expect([
+    resolveCanonicalBaseModel("openai/gpt-5.6-luna-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-sol-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-terra-pro"),
+  ]).toEqual([
+    "openai/gpt-5.6-luna",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+  ]);
   expect(model).toMatchObject({
     base_model: "openai/gpt-5.6-sol",
     name: "GPT-5.6 Sol Pro",
