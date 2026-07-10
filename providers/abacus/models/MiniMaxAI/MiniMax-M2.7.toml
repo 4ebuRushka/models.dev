@@ -1,5 +1,5 @@
 # Source: https://routellm.abacus.ai/v1/models
-# RouteLLM model description does not indicate reasoning emission for this ID.
+# RouteLLM API does not report thinking: true for this ID.
 base_model = "minimax/MiniMax-M2.7"
 reasoning = false
 

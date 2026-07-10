@@ -1,3 +1,11 @@
+# Source: https://routellm.abacus.ai/v1/models
+# RouteLLM input_modalities: ['text', 'image']
+# RouteLLM output_modalities: ['text', 'image']
+# RouteLLM context_length: 65536
+# RouteLLM max_completion_tokens: 32768
+# RouteLLM input_token_rate: 0.000002
+# RouteLLM output_token_rate: 0.000012
+# RouteLLM cached_input_token_rate: 0.0000002
 base_model = "google/gemini-3-pro-image-preview"
 reasoning = true
 reasoning_options = []

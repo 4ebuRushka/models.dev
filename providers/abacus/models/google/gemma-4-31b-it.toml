@@ -1,4 +1,5 @@
 # Source: https://routellm.abacus.ai/v1/models
+# RouteLLM API does not report thinking: true for this ID.
 # RouteLLM input_modalities: ['text', 'image']
 # RouteLLM output_modalities: ['text']
 # RouteLLM context_length: 262144
