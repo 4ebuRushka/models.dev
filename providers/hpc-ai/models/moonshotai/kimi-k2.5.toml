@@ -3,7 +3,7 @@ description = "Kimi multimodal agent model for visual understanding, coding, and
 family = "kimi-k2"
 release_date = "2026-01-01"
 last_updated = "2026-06-01"
-attachment = false
+attachment = true
 reasoning = true
 reasoning_options = [{ type = "toggle" }]
 structured_output = true
@@ -21,9 +21,9 @@ output = 1.50
 cache_read = 0.05
 
 [limit]
-context = 262_144
+context = 256_000
 output = 262_144
 
 [modalities]
-input = ["text", "image", "video"]
+input = ["text", "image"]
 output = ["text"]

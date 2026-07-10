@@ -11,3 +11,7 @@ tier = { type = "context", size = 272_000 }
 input = 10.00
 output = 45.00
 cache_read = 1.00
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]
