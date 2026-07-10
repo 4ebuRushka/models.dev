@@ -1,4 +1,5 @@
 # Source: https://routellm.abacus.ai/v1/models
+# RouteLLM API does not report thinking: true for this ID.
 # RouteLLM input_modalities: ['text']
 # RouteLLM output_modalities: ['text']
 # RouteLLM context_length: 1048576
@@ -7,7 +8,7 @@
 # RouteLLM output_token_rate: 0.000003
 # RouteLLM cached_input_token_rate: 0.0000002
 base_model = "xiaomi/mimo-v2-pro"
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 1

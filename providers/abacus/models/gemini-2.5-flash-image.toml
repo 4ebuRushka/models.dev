@@ -1,4 +1,5 @@
 # Source: https://routellm.abacus.ai/v1/models
+# RouteLLM API does not report thinking: true for this ID.
 # RouteLLM input_modalities: ['text', 'image']
 # RouteLLM output_modalities: ['text', 'image']
 # RouteLLM context_length: 32768
@@ -6,8 +7,7 @@
 # RouteLLM input_token_rate: 0.0000003
 # RouteLLM output_token_rate: 0.00003
 base_model = "google/gemini-2.5-flash-image"
-reasoning = true
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 0.3
