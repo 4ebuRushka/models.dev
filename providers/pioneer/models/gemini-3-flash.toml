@@ -1,5 +1,11 @@
 base_model = "google/gemini-3-flash-preview"
-reasoning_options = []
+
+[interleaved]
+field = "reasoning_content"
+
+[[reasoning_options]]
+type = "effort"
+values = ["low", "medium", "high"]
 
 [cost]
 input = 0.5
@@ -8,5 +14,4 @@ cache_read = 0.05
 cache_write = 0.083333
 
 [limit]
-context = 1_048_576
 output = 65_535

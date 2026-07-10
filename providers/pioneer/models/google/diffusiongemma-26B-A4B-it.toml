@@ -3,10 +3,17 @@ description = "Gemini model for general assistance, reasoning, and multimodal wo
 release_date = "2026-05-31"
 last_updated = "2026-05-31"
 attachment = false
-reasoning = false
+reasoning = true
 temperature = true
 tool_call = true
 open_weights = false
+
+[interleaved]
+field = "reasoning_content"
+
+[[reasoning_options]]
+type = "effort"
+values = ["low", "medium", "high", "xhigh"]
 
 [cost]
 input = 0.5

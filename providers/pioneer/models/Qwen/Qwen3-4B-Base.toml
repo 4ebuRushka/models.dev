@@ -3,10 +3,17 @@ description = "Qwen instruction model for multilingual chat, reasoning, and tool
 release_date = "2025-03-31"
 last_updated = "2025-03-31"
 attachment = false
-reasoning = false
+reasoning = true
 temperature = true
 tool_call = true
 open_weights = false
+
+[interleaved]
+field = "reasoning_content"
+
+[[reasoning_options]]
+type = "effort"
+values = ["low", "medium", "high"]
 
 [cost]
 input = 0.15

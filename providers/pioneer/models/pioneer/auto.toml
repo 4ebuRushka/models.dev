@@ -11,6 +11,9 @@ tool_call = true
 structured_output = true
 open_weights = false
 
+[interleaved]
+field = "reasoning_content"
+
 [limit]
 context = 1_048_576
 output = 4_096
