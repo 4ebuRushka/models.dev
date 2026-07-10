@@ -1,6 +1,4 @@
-base_model = "deepseek/deepseek-v4-flash"
-last_updated = "2026-06-12"
-tool_call = false
+base_model = "alibaba/qwen3.6-27b"
 
 [[reasoning_options]]
 type = "toggle"
@@ -12,11 +10,15 @@ values = ["none", "low", "medium", "high", "max"]
 [[reasoning_options]]
 type = "budget_tokens"
 min = 1
-max = 393_216
+max = 80_000
 
 [cost]
-input = 0.14
-output = 0.28
+input = 0.412564
+output = 2.475384
 
 [limit]
-output = 393_216
+context = 256_000
+output = 64_000
+
+[modalities]
+input = ["text", "image", "video"]

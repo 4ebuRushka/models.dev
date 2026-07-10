@@ -8,11 +8,16 @@ import { factorBaseModel, resolveCanonicalBaseModel } from "./openrouter.js";
 const API_ENDPOINT = "https://api.empiriolabs.ai/v1/models";
 
 const CANONICAL_BASE_MODELS: Record<string, string> = {
+  "fugu-ultra": "sakana/fugu-ultra",
   "gemma-4-26b-a4b": "google/gemma-4-26b-a4b-it",
   "gemma-4-e4b": "google/gemma-4-E4B-it",
+  "muse-spark-1-1": "meta/muse-spark-1.1",
   "qwen3-5-9b": "alibaba/qwen3.5-9b",
   "qwen3-7-max": "alibaba/qwen3.7-max",
   "qwen3-7-plus": "alibaba/qwen3.7-plus",
+  "step-3-5-flash": "stepfun/step-3.5-flash",
+  "step-3-5-flash-2603": "stepfun/step-3.5-flash-2603",
+  "step-3-7-flash": "stepfun/step-3.7-flash",
 };
 
 const EmpiriolabsParameter = z
@@ -20,6 +25,8 @@ const EmpiriolabsParameter = z
     name: z.string(),
     type: z.string().optional(),
     options: z.array(z.string()).optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
   })
   .passthrough();
 
@@ -28,6 +35,7 @@ const EmpiriolabsPricingTier = z
     prompt: z.string().optional(),
     completion: z.string().optional(),
     input_cache_read: z.string().optional(),
+    min_context: z.number().nullable().optional(),
   })
   .passthrough();
 
@@ -43,14 +51,16 @@ const EmpiriolabsModel = z
     id: z.string(),
     display_name: z.string().optional(),
     name: z.string().optional(),
+    description: z.string().optional(),
     category: z.string().optional(),
     context_length: z.number().nullable().optional(),
     context_window: z.number().nullable().optional(),
     max_output_tokens: z.number().nullable().optional(),
-    model_released_at: z.string().optional(),
+    model_released_at: z.string().nullable().optional(),
     pricing: EmpiriolabsPricing.optional(),
     capabilities: z.record(z.unknown()).optional(),
     features: z.array(z.string()).optional(),
+    structured_output: z.string().nullable().optional(),
     input_modalities: z.array(z.string()).optional(),
     output_modalities: z.array(z.string()).optional(),
     supported_parameters: z.array(EmpiriolabsParameter).optional(),
@@ -131,11 +141,6 @@ const EFFORT_VALUES: EffortValue[] = [
   "default",
 ];
 
-function firstPricingTier(pricing: EmpiriolabsModel["pricing"]) {
-  if (pricing === undefined) return undefined;
-  return Array.isArray(pricing) ? pricing[0] : pricing;
-}
-
 function price(value: string | undefined) {
   if (value === undefined) return undefined;
   const number = Number(value);
@@ -143,6 +148,21 @@ function price(value: string | undefined) {
   return Number.isFinite(number) && number >= 0
     ? Math.round(number * 1_000_000_000_000) / 1_000_000
     : undefined;
+}
+
+function nonZeroPrice(value: string | undefined) {
+  const result = price(value);
+  return result !== undefined && result > 0 ? result : undefined;
+}
+
+type TierCost = { input: number; output: number; cache_read?: number };
+
+function tierCost(tier: z.infer<typeof EmpiriolabsPricingTier> | undefined): TierCost | undefined {
+  const input = price(tier?.prompt);
+  const output = price(tier?.completion);
+  if (input === undefined || output === undefined) return undefined;
+  const cacheRead = nonZeroPrice(tier?.input_cache_read);
+  return { input, output, cache_read: cacheRead };
 }
 
 function modalities(values: string[] | undefined, fallback: Modality[]): Modality[] {
@@ -154,20 +174,36 @@ function modalities(values: string[] | undefined, fallback: Modality[]): Modalit
   return [...new Set(result.length > 0 ? result : fallback)];
 }
 
-function reasoningOptions(model: EmpiriolabsModel) {
+function reasoningOptions(model: EmpiriolabsModel): SyncedModel["reasoning_options"] {
   const params = model.supported_parameters ?? [];
+  const options: NonNullable<SyncedModel["reasoning_options"]> = [];
+  if (params.some((parameter) => parameter.name === "enable_thinking")) {
+    options.push({ type: "toggle" });
+  }
+
   const effort = params.find((parameter) => parameter.name === "reasoning_effort");
   if (effort?.options?.length) {
     const values = effort.options.filter((value): value is EffortValue =>
       (EFFORT_VALUES as string[]).includes(value),
     );
-    if (values.length > 0) return [{ type: "effort" as const, values }];
+    if (values.length > 0) options.push({ type: "effort", values });
   }
-  if (params.some((parameter) => parameter.name === "enable_thinking")) {
-    return [{ type: "toggle" as const }];
+
+  const budget = params.find((parameter) => parameter.name === "thinking_budget");
+  if (budget !== undefined) {
+    const option: { type: "budget_tokens"; min?: number; max?: number } = { type: "budget_tokens" };
+    if (budget.min !== undefined) option.min = budget.min;
+    if (budget.max !== undefined) option.max = budget.max;
+    options.push(option);
   }
-  // Reasoning model that exposes no effort or toggle control.
-  return [];
+  return options;
+}
+
+function parameterOutputLimit(model: EmpiriolabsModel) {
+  const parameter = (model.supported_parameters ?? []).find(
+    (item) => item.name === "max_tokens" || item.name === "max_completion_tokens",
+  );
+  return parameter?.max !== undefined && parameter.max > 0 ? parameter.max : undefined;
 }
 
 export function resolveEmpiriolabsBaseModel(id: string) {
@@ -240,18 +276,27 @@ export function buildEmpiriolabsModel(
     (model.supported_parameters ?? []).some((parameter) => parameter.name === "temperature")
     || existing?.temperature === true;
 
-  const tier = firstPricingTier(model.pricing);
-  const inputCost = price(tier?.prompt) ?? existing?.cost?.input;
-  const outputCost = price(tier?.completion) ?? existing?.cost?.output;
-  const cacheRead = price(tier?.input_cache_read) ?? existing?.cost?.cache_read;
-  const cost = inputCost !== undefined && outputCost !== undefined
+  const pricingTiers = model.pricing === undefined
+    ? []
+    : Array.isArray(model.pricing)
+    ? [...model.pricing].sort((a, b) => (a.min_context ?? 0) - (b.min_context ?? 0))
+    : [model.pricing];
+  const baseCost = tierCost(pricingTiers[0]);
+  const contextTiers = pricingTiers
+    .slice(1)
+    .map((tier) => {
+      const tierPricing = tierCost(tier);
+      return tierPricing === undefined || tier.min_context === undefined || tier.min_context === null
+        ? undefined
+        : { tier: { type: "context" as const, size: tier.min_context }, ...tierPricing };
+    })
+    .filter((tier): tier is NonNullable<typeof tier> => tier !== undefined);
+  const cost = baseCost !== undefined
     ? {
-        input: inputCost,
-        output: outputCost,
+        ...baseCost,
         reasoning: existing?.cost?.reasoning,
-        cache_read: cacheRead !== undefined && cacheRead > 0 ? cacheRead : undefined,
         cache_write: existing?.cost?.cache_write,
-        tiers: existing?.cost?.tiers,
+        tiers: contextTiers.length > 0 ? contextTiers : undefined,
       }
     : existing?.cost;
 
@@ -262,18 +307,22 @@ export function buildEmpiriolabsModel(
 
   const releaseDate = baseModel === undefined
     ? model.model_released_at ?? existing?.release_date
-    : existing?.release_date;
+    : undefined;
   const lastUpdated = baseModel === undefined
     ? model.model_released_at ?? existing?.last_updated ?? releaseDate
     : existing?.last_updated ?? releaseDate;
-  const output_tokens = model.max_output_tokens ?? existing?.limit?.output ?? context;
+  const outputTokens = model.max_output_tokens
+    ?? parameterOutputLimit(model)
+    ?? existing?.limit?.output
+    ?? context;
   const limit = {
     context,
     input: existing?.limit?.input,
-    output: output_tokens,
+    output: outputTokens,
   };
   const values: Partial<SyncedFullModel> = {
     name: model.display_name ?? model.name ?? model.id,
+    description: baseModel === undefined ? existing?.description ?? model.description : existing?.description,
     family: existing?.family,
     release_date: releaseDate,
     last_updated: lastUpdated,
@@ -282,7 +331,10 @@ export function buildEmpiriolabsModel(
     reasoning_options: reasoning ? reasoningOptions(model) : undefined,
     temperature: temperature || undefined,
     tool_call: toolCall,
-    structured_output: structuredOutput || undefined,
+    structured_output:
+      (model.structured_output !== undefined && model.structured_output !== null)
+      || structuredOutput
+      || undefined,
     knowledge: existing?.knowledge,
     open_weights: existing?.open_weights,
     status: existing?.status,
@@ -299,6 +351,7 @@ export function buildEmpiriolabsModel(
   if (existing === undefined) return undefined;
   const required = z.object({
     name: z.string(),
+    description: z.string(),
     release_date: z.string(),
     last_updated: z.string(),
     open_weights: z.boolean(),

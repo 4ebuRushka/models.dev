@@ -1,7 +1,4 @@
-base_model = "alibaba/qwen3.7-plus"
-last_updated = "2026-06-12"
-attachment = true
-structured_output = true
+base_model = "alibaba/qwen3.5-397b-a17b"
 
 [[reasoning_options]]
 type = "toggle"
@@ -13,19 +10,20 @@ values = ["none", "low", "medium", "high", "max"]
 [[reasoning_options]]
 type = "budget_tokens"
 min = 1
-max = 256_000
+max = 80_000
 
 [cost]
-input = 0.4
-output = 1.6
+input = 0.172
+output = 1.032
 
 [[cost.tiers]]
-tier = { type = "context", size = 256_000 }
-input = 1.2
-output = 4.8
+tier = { type = "context", size = 128_000 }
+input = 0.43
+output = 2.58
 
 [limit]
-output = 65_536
+context = 256_000
+output = 64_000
 
 [modalities]
 input = ["text", "image", "video"]

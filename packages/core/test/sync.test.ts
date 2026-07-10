@@ -20,6 +20,12 @@ import {
   type DigitalOceanSourceModel,
 } from "../src/sync/providers/digitalocean.js";
 import {
+  buildEmpiriolabsModel,
+  empiriolabs,
+  resolveEmpiriolabsBaseModel,
+  type EmpiriolabsModel,
+} from "../src/sync/providers/empiriolabs.js";
+import {
   buildOpenRouterModel,
   openrouter,
   resolveCanonicalBaseModel,
@@ -1188,6 +1194,71 @@ test("skips an unavailable OpenRouter stub with no authored file", () => {
   });
 
   expect(translated).toBeUndefined();
+});
+
+test("parses nullable EmpirioLabs release dates", () => {
+  expect(empiriolabs.parseModels({
+    data: [{ id: "unknown-text-model", category: "text", model_released_at: null }],
+  })).toHaveLength(1);
+});
+
+test("syncs EmpirioLabs pricing tiers and reasoning controls", () => {
+  const model: EmpiriolabsModel = {
+    id: "minimax-m3",
+    display_name: "MiniMax M3",
+    category: "text",
+    context_length: 1_000_000,
+    max_output_tokens: null,
+    capabilities: { reasoning: true },
+    features: ["reasoning", "function_calling"],
+    structured_output: "json_object",
+    input_modalities: ["text", "image", "video"],
+    output_modalities: ["text"],
+    supported_parameters: [
+      { name: "temperature" },
+      { name: "max_completion_tokens", max: 524_288 },
+      { name: "enable_thinking" },
+      { name: "reasoning_effort", options: ["none", "low", "medium", "high", "max"] },
+      { name: "thinking_budget", min: 1_024, max: 32_768 },
+    ],
+    pricing: [
+      { prompt: "0.000000225", completion: "0.0000009", input_cache_read: "0.000000045" },
+      {
+        prompt: "0.00000045",
+        completion: "0.0000018",
+        input_cache_read: "0.000000045",
+        min_context: 512_000,
+      },
+    ],
+  };
+
+  expect(buildEmpiriolabsModel(model, { base_model: "minimax/MiniMax-M3" })).toMatchObject({
+    base_model: "minimax/MiniMax-M3",
+    structured_output: true,
+    reasoning_options: [
+      { type: "toggle" },
+      { type: "effort", values: ["none", "low", "medium", "high", "max"] },
+      { type: "budget_tokens", min: 1_024, max: 32_768 },
+    ],
+    cost: {
+      input: 0.225,
+      output: 0.9,
+      cache_read: 0.045,
+      tiers: [{
+        tier: { type: "context", size: 512_000 },
+        input: 0.45,
+        output: 1.8,
+        cache_read: 0.045,
+      }],
+    },
+    limit: { context: 1_000_000, output: 524_288 },
+  });
+});
+
+test("maps EmpirioLabs aliases to canonical model metadata", () => {
+  expect(resolveEmpiriolabsBaseModel("fugu-ultra")).toBe("sakana/fugu-ultra");
+  expect(resolveEmpiriolabsBaseModel("muse-spark-1-1")).toBe("meta/muse-spark-1.1");
+  expect(resolveEmpiriolabsBaseModel("step-3-5-flash")).toBe("stepfun/step-3.5-flash");
 });
 
 function unavailableStub(): OpenRouterModel {

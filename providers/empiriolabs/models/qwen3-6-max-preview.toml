@@ -1,6 +1,6 @@
-base_model = "deepseek/deepseek-v4-flash"
-last_updated = "2026-06-12"
+base_model = "alibaba/qwen3.6-max-preview"
 tool_call = false
+structured_output = true
 
 [[reasoning_options]]
 type = "toggle"
@@ -15,8 +15,13 @@ min = 1
 max = 393_216
 
 [cost]
-input = 0.14
-output = 0.28
+input = 1.31
+output = 7.88
+
+[[cost.tiers]]
+tier = { type = "context", size = 128_000 }
+input = 1.97
+output = 11.82
 
 [limit]
-output = 393_216
+context = 256_000
