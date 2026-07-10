@@ -13,6 +13,7 @@ import { deepinfra } from "./providers/deepinfra.js";
 import { digitalocean } from "./providers/digitalocean.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
+import { kilo } from "./providers/kilo.js";
 import { llmgateway } from "./providers/llmgateway.js";
 import { openai } from "./providers/openai.js";
 import { openrouter } from "./providers/openrouter.js";
@@ -97,6 +98,7 @@ export const providers: {
   deepinfra: SyncProvider<any>;
   digitalocean: SyncProvider<any>;
   google: SyncProvider<any>;
+  kilo: SyncProvider<any>;
   huggingface: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
   openai: SyncProvider<any>;
@@ -115,6 +117,7 @@ export const providers: {
   deepinfra,
   digitalocean,
   google,
+  kilo,
   huggingface,
   llmgateway,
   openai,
@@ -127,7 +130,7 @@ export const providers: {
 };
 
 export const groups = {
-  aggregators: ["crossmodel", "huggingface", "llmgateway", "openrouter", "vercel"],
+  aggregators: ["crossmodel", "huggingface", "kilo", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
   direct: ["anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "openai", "ovhcloud", "venice", "wandb", "xai"],
 } as const;
