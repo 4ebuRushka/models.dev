@@ -1,3 +1,4 @@
+# Source: https://routellm.abacus.ai/v1/models
 name = "RouteLLM"
 description = "RouteLLM routes prompts to an appropriate Abacus-backed text-generation model"
 family = "gpt"

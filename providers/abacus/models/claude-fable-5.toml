@@ -1,3 +1,4 @@
+# Source: https://routellm.abacus.ai/v1/models
 base_model = "anthropic/claude-fable-5"
 reasoning = true
 reasoning_options = []
