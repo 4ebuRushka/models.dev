@@ -5,7 +5,7 @@ description = "Frontier GPT model for professional reasoning, coding, and multim
 
 [[reasoning_options]]
 type = "effort"
-values = ["none", "minimal", "low", "medium", "high"]
+values = ["none", "low", "medium", "high", "xhigh", "max"]
 
 [cost]
 input = 6.25
