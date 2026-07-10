@@ -1,0 +1,15 @@
+base_model = "anthropic/claude-fable-5"
+reasoning = true
+reasoning_options = []
+
+[cost]
+input = 10
+output = 50
+
+[limit]
+context = 1_000_000
+output = 128_000
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]

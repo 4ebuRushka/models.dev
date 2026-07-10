@@ -1,0 +1,15 @@
+base_model = "anthropic/claude-sonnet-5"
+reasoning = true
+reasoning_options = []
+
+[cost]
+input = 3
+output = 15
+
+[limit]
+context = 1_000_000
+output = 64_000
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]

@@ -1,19 +1,11 @@
-name = "o3"
-description = "O-series reasoning model for hard analysis, math, coding, and planning"
-family = "o"
-release_date = "2025-04-16"
-last_updated = "2025-04-16"
-attachment = true
+base_model = "openai/o3"
 reasoning = true
 reasoning_options = []
-temperature = false
-knowledge = "2024-05"
-tool_call = true
-open_weights = false
 
 [cost]
 input = 2.00
 output = 8.00
+cache_read = 0.5
 
 [limit]
 context = 200_000
