@@ -1,6 +1,7 @@
 # Zeldoc publishes no API reference or documented toggle, effort, or token budget.
 # https://docs.zeldoc.ai/ (accessed 2026-06-25)
 name = "Z-Code"
+description = "Coding model for repository understanding, refactors, and agentic engineering tasks"
 release_date = "2026-04-15"
 last_updated = "2026-04-15"
 attachment = false
