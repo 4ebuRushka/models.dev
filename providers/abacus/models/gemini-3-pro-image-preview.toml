@@ -8,7 +8,8 @@
 # RouteLLM output_token_rate: 0.000012
 # RouteLLM cached_input_token_rate: 0.0000002
 base_model = "google/gemini-3-pro-image-preview"
-reasoning = false
+reasoning = true
+reasoning_options = []
 
 [cost]
 input = 2

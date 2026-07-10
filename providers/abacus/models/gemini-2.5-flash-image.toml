@@ -7,7 +7,8 @@
 # RouteLLM input_token_rate: 0.0000003
 # RouteLLM output_token_rate: 0.00003
 base_model = "google/gemini-2.5-flash-image"
-reasoning = false
+reasoning = true
+reasoning_options = []
 
 [cost]
 input = 0.3

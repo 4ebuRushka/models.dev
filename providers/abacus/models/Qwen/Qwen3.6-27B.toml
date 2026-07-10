@@ -7,7 +7,8 @@
 # RouteLLM input_token_rate: 0.00000032
 # RouteLLM output_token_rate: 0.0000032
 base_model = "alibaba/qwen3.6-27b"
-reasoning = false
+reasoning = true
+reasoning_options = []
 
 [cost]
 input = 0.32
