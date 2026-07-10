@@ -1,9 +1,9 @@
 base_model = "openai/gpt-realtime-2.1"
+reasoning_options = [{ type = "effort", values = ["minimal", "low", "medium", "high", "xhigh"] }]
 name = "gpt-realtime-2.1"
 description = "Speech generation model for controllable voice, narration, and audio delivery"
 release_date = "2026-07-09"
 attachment = false
-reasoning = false
 temperature = true
 tool_call = false
 
