@@ -8,8 +8,7 @@
 # RouteLLM output_token_rate: 0.000008
 # RouteLLM cached_input_token_rate: 0.0000005
 base_model = "openai/o3"
-reasoning = true
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 2.00
