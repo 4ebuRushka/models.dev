@@ -5,6 +5,18 @@ import type { ExistingModel, SyncProvider, SyncedModel } from "../index.js";
 
 const API_ENDPOINT = "https://api.pioneer.ai/v1/models";
 
+const BaseModels: Record<string, string> = {
+  "Qwen/Qwen3.5-9B": "alibaba/qwen3.5-9b",
+  "google/gemma-4-E2B-it": "google/gemma-4-E2B-it",
+  "google/gemma-4-E4B-it": "google/gemma-4-E4B-it",
+  "mistral-medium-3.5": "mistral/mistral-medium-2604",
+  "moonshotai/Kimi-K2.7-Code": "moonshotai/kimi-k2.7-code",
+  "openai/gpt-oss-120b": "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b": "openai/gpt-oss-20b",
+  "sakana/fugu-ultra": "sakana/fugu-ultra",
+  "zai-org/GLM-5.2": "zhipuai/glm-5.2",
+};
+
 const Capability = z
   .object({
     supported: z.boolean(),
@@ -90,10 +102,12 @@ function buildPioneerModel(
   existing: ExistingModel | undefined,
 ): SyncedModel {
   const status = model.deprecated === true ? "deprecated" : existing?.status;
+  const baseModel = existing?.base_model ?? BaseModels[model.id];
 
-  if (existing?.base_model !== undefined) {
+  if (baseModel !== undefined) {
     return stripInheritedMetadata({
-      ...existing,
+      ...(existing ?? {}),
+      base_model: baseModel,
       status,
       limit: {
         context: model.max_input_tokens,
@@ -148,6 +162,7 @@ function buildPioneerModel(
 function stripInheritedMetadata(model: SyncedModel): SyncedModel {
   const {
     name: _name,
+    description: _description,
     family: _family,
     release_date: _releaseDate,
     last_updated: _lastUpdated,
