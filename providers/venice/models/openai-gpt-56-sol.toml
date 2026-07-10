@@ -4,7 +4,7 @@ description = "GPT model for general reasoning, writing, coding, and tool-assist
 
 [[reasoning_options]]
 type = "effort"
-values = ["none", "minimal", "low", "medium", "high"]
+values = ["none", "low", "medium", "high", "xhigh", "max"]
 
 [cost]
 input = 6.25
