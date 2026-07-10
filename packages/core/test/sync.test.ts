@@ -246,25 +246,40 @@ function digitalOceanModel(overrides: Partial<DigitalOceanSourceModel> = {}): Di
   return {
     id: "anthropic-claude-4.6-sonnet",
     name: "Claude Sonnet 4.6",
-    lifecycle_status: "available",
+    lifecycle_status: "active",
     type: "chat",
     thinking: true,
+    reasoning_efforts: ["low", "medium", "high"],
     context_window: 1_000_000,
+    max_output_tokens: 8_192,
+    availability: ["serverless"],
     modalities: { input: ["text", "image", "pdf"], output: ["text"] },
     settings: [{ name: "max_tokens", max: 64_000 }],
     created_at: "2026-02-17T00:00:00Z",
     pricing: {
       input: 3,
       output: 15,
-      inputOver200k: 6,
-      outputOver200k: 22.5,
+      cacheRead: 0.3,
     },
     ...overrides,
   };
 }
 
-test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
-  const model = buildDigitalOceanModel(digitalOceanModel(), {
+test("syncs DigitalOcean catalog limits and extended pricing thresholds", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel({
+    pricing: {
+      input: 3,
+      output: 15,
+      cacheRead: 0.3,
+      extended: {
+        context: 272_000,
+        input: 6,
+        output: 22.5,
+        cacheRead: 0.6,
+        cacheWrite: 7.5,
+      },
+    },
+  }), {
     name: "Claude Sonnet 4.6",
     description: "Curated DigitalOcean description",
     family: "claude-sonnet",
@@ -276,7 +291,6 @@ test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
     temperature: true,
     tool_call: true,
     open_weights: false,
-    status: "beta",
     cost: {
       input: 2,
       output: 10,
@@ -297,21 +311,20 @@ test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
   expect(model).toMatchObject({
     description: "Curated DigitalOcean description",
     last_updated: "2026-03-13",
-    status: "beta",
     cost: {
       input: 3,
       output: 15,
       cache_read: 0.3,
       cache_write: 3.75,
       tiers: [{
-        tier: { type: "context", size: 200_000 },
+        tier: { type: "context", size: 272_000 },
         input: 6,
         output: 22.5,
         cache_read: 0.6,
         cache_write: 7.5,
       }],
     },
-    limit: { context: 1_000_000, output: 64_000 },
+    limit: { context: 1_000_000, output: 8_192 },
   });
 });
 
@@ -346,7 +359,7 @@ test("skips existing dedicated-only DigitalOcean models without token pricing", 
   expect(translated).toBeUndefined();
 });
 
-test("syncs existing DigitalOcean image models with zero token limits", () => {
+test("syncs existing DigitalOcean image models with catalog output limits", () => {
   const existing = {
     name: "GPT Image 1.5",
     description: "Image generation model",
@@ -366,6 +379,7 @@ test("syncs existing DigitalOcean image models with zero token limits", () => {
     id: "openai-gpt-image-1.5",
     name: "GPT Image 1.5",
     context_window: undefined,
+    max_output_tokens: 16_384,
     modalities: { input: ["text", "image"], output: ["text", "image"] },
     settings: [],
     pricing: { input: 6, output: 12 },
@@ -376,11 +390,11 @@ test("syncs existing DigitalOcean image models with zero token limits", () => {
 
   expect(translated?.model).toMatchObject({
     cost: { input: 6, output: 12 },
-    limit: { context: 0, output: 0 },
+    limit: { context: 0, output: 16_384 },
   });
 });
 
-test("filters unmanaged DigitalOcean models and joins pricing names", () => {
+test("filters unmanaged DigitalOcean models and joins catalog data by ID", () => {
   const models = parseDigitalOceanModels({
     models: [
       digitalOceanModel({ id: "kimi-k2.5", name: "Kimi K2", pricing: undefined }),
@@ -392,16 +406,118 @@ test("filters unmanaged DigitalOcean models and joins pricing names", () => {
         pricing: undefined,
       }),
     ],
-    pricing: [
-      { name: "Kimi K2.5 Input Tokens", slug: "input", model: "DigitalOcean-Hosted Models", price: { rate: 0.5 } },
-      { name: "Kimi K2.5 Output Tokens", slug: "output", model: "DigitalOcean-Hosted Models", price: { rate: 2.4 } },
+    catalog: [
+      {
+        model_id: "kimi-k2.5",
+        name: "Kimi K2.5",
+        context_window: "256000",
+        max_output_tokens: "32768",
+        availability: ["serverless", "dedicated"],
+        pricing: {
+          input_price_per_million: 0.000000375,
+          output_price_per_million: 0.000002025,
+          cache_read_input_price_per_million: 0.000000203,
+        },
+        pricing_detail: {
+          variants: [{
+            tier: "MODEL_PRICING_TIER_EXTENDED_272K",
+            mode: "MODEL_BILLING_MODE_INTERACTIVE",
+            prices: {
+              input_price_per_million: 0.00000075,
+              output_price_per_million: 0.000003,
+            },
+          }],
+        },
+      },
+      {
+        model_id: "bge-m3",
+        name: "BGE M3",
+        availability: ["serverless"],
+      },
     ],
   });
 
   expect(models).toHaveLength(1);
   expect(models[0]).toMatchObject({
     id: "kimi-k2.5",
-    pricing: { input: 0.5, output: 2.4 },
+    context_window: "256000",
+    max_output_tokens: "32768",
+    pricing: {
+      input: 0.375,
+      output: 2.025,
+      cacheRead: 0.203,
+      extended: {
+        context: 272_000,
+        input: 0.75,
+        output: 3,
+      },
+    },
+  });
+});
+
+test("maps DigitalOcean 1M catalog pricing to its 200K threshold", () => {
+  const models = parseDigitalOceanModels({
+    models: [digitalOceanModel({ pricing: undefined })],
+    catalog: [{
+      model_id: "anthropic-claude-4.6-sonnet",
+      name: "Claude Sonnet 4.6",
+      context_window: "1000000",
+      max_output_tokens: "64000",
+      availability: ["serverless"],
+      modalities: { input: ["text", "image"], output: ["text"] },
+      pricing: {
+        input_price_per_million: 0.000003,
+        output_price_per_million: 0.000015,
+      },
+      pricing_detail: {
+        variants: [{
+          tier: "MODEL_PRICING_TIER_EXTENDED_1M",
+          mode: "MODEL_BILLING_MODE_INTERACTIVE",
+          prices: {
+            input_price_per_million: 0.000006,
+            output_price_per_million: 0.0000225,
+          },
+        }],
+      },
+    }],
+  });
+
+  expect(models[0]?.pricing?.extended).toEqual({
+    context: 200_000,
+    input: 6,
+    output: 22.5,
+    cacheRead: undefined,
+    cacheWrite: undefined,
+  });
+});
+
+test("syncs DigitalOcean reasoning capability, efforts, and lifecycle status", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel({
+    lifecycle_status: "deprecated",
+    thinking: false,
+    reasoning_efforts: ["none", "low", "medium", "high", "max", "unsupported"],
+  }), {
+    name: "Claude Sonnet 4.6",
+    description: "Curated DigitalOcean description",
+    family: "claude-sonnet",
+    release_date: "2026-02-17",
+    last_updated: "2026-03-13",
+    attachment: true,
+    reasoning: false,
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    temperature: true,
+    tool_call: true,
+    open_weights: false,
+    status: "beta",
+    cost: { input: 3, output: 15 },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text", "image"], output: ["text"] },
+  });
+
+  expect(model).toMatchObject({
+    status: "deprecated",
+    reasoning: true,
+    reasoning_options: [{ type: "effort", values: ["none", "low", "medium", "high", "max"] }],
   });
 });
 
@@ -416,6 +532,7 @@ test("new DigitalOcean base models inherit intrinsic capabilities", () => {
       id: "openai-gpt-5.5",
       name: "GPT-5.5",
       thinking: undefined,
+      reasoning_efforts: undefined,
     }),
     undefined,
     "openai/gpt-5.5",
@@ -499,8 +616,45 @@ test("fetches every page of the DigitalOcean catalog", async () => {
   const fetcher = ((input: string | URL | Request) => {
     const url = String(input);
     requests.push(url);
-    if (url.includes("static-content")) {
-      return Promise.resolve(new Response(JSON.stringify({ gradient: { models: [] } })));
+    if (url.includes("/catalog/first-catalog-id")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: {
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "Stale First Detail",
+          context_window: "50",
+          max_output_tokens: "10",
+          availability: ["dedicated"],
+          modalities: { input: ["text", "image"], output: ["text"] },
+          pricing: { input_price_per_million: 0.000009, output_price_per_million: 0.000009 },
+          pricing_detail: { variants: [] },
+        },
+      })));
+    }
+    if (url.includes("/catalog/second-catalog-id")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: { id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] },
+      })));
+    }
+    if (url.includes("/catalog") && url.includes("page=2")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: [{ id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] }],
+        meta: { total: 2, page: 2, pages: 2 },
+      })));
+    }
+    if (url.includes("/catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: [{
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "First",
+          context_window: "100",
+          max_output_tokens: "90",
+          availability: ["serverless"],
+          pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+        }],
+        meta: { total: 2, page: 1, pages: 2 },
+      })));
     }
     if (url.includes("?page=2")) {
       return Promise.resolve(new Response(JSON.stringify({ models: [second] })));
@@ -513,7 +667,17 @@ test("fetches every page of the DigitalOcean catalog", async () => {
 
   const result = await fetchDigitalOceanModels("test-key", fetcher);
   expect(result.models.map((model) => model.id)).toEqual(["first", "second"]);
-  expect(requests).toHaveLength(3);
+  expect(result.catalog.map((model) => model.model_id)).toEqual(["first", "second"]);
+  expect(result.catalog[0]).toMatchObject({
+    name: "First",
+    context_window: "100",
+    max_output_tokens: "90",
+    availability: ["serverless"],
+    pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+    modalities: { input: ["text", "image"], output: ["text"] },
+    pricing_detail: { variants: [] },
+  });
+  expect(requests).toHaveLength(6);
 });
 
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
