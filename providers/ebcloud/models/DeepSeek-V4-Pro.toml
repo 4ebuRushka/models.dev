@@ -1,7 +1,9 @@
 base_model = "deepseek/deepseek-v4-pro"
 reasoning_options = []
 
+[interleaved]
+field = "reasoning_content"
+
 [cost]
 input = 0.4289
 output = 0.8571
-reasoning = 0.00
