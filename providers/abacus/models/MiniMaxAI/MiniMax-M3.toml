@@ -7,7 +7,7 @@
 # RouteLLM input_token_rate: 0.0000003
 # RouteLLM output_token_rate: 0.0000012
 base_model = "minimax/MiniMax-M3"
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 0.3

@@ -7,7 +7,7 @@
 # RouteLLM input_token_rate: 0.0000006
 # RouteLLM output_token_rate: 0.0000022
 base_model = "zhipuai/glm-4.7"
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 0.6
