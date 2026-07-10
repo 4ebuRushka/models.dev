@@ -1,25 +1,7 @@
-name = "GLM-5.1"
-description = "Strong GLM coding model for agentic engineering, terminals, and repository generation"
-attachment = false      
-reasoning = true
-reasoning_options = [ { type = "effort", values = ["default"]} ]
-tool_call = true         
-structured_output = true 
-temperature = false      
-release_date = "2025-02-19" 
-last_updated = "2025-02-19"
-open_weights = true      
+base_model = "zhipuai/glm-5.1"
+reasoning_options = []
 
 [cost]
-input =  0.143
-output = 0.2858  
+input = 0.8571
+output = 3.4286
 reasoning = 0.00
-
-[limit]
-context = 128_000 # 最大上下文窗口，DeepSeek-V4 通常是 128k
-input = 128_000   
-output = 8_192    # 最大输出 token 限制
-
-[modalities]
-input = ["text"]
-output = ["text"]
