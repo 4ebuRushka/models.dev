@@ -1,4 +1,10 @@
 # Source: https://routellm.abacus.ai/v1/models
+# RouteLLM input_modalities: ['text', 'image']
+# RouteLLM output_modalities: ['text']
+# RouteLLM context_length: None
+# RouteLLM max_completion_tokens: 64000
+# RouteLLM input_token_rate: 0.000003
+# RouteLLM output_token_rate: 0.000015
 name = "RouteLLM"
 description = "RouteLLM routes prompts to an appropriate Abacus-backed text-generation model"
 family = "gpt"

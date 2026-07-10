@@ -1,6 +1,13 @@
 # Source: https://routellm.abacus.ai/v1/models
+# RouteLLM model description does not indicate reasoning emission for this ID.
+# RouteLLM input_modalities: ['text']
+# RouteLLM output_modalities: ['text']
+# RouteLLM context_length: 202752
+# RouteLLM max_completion_tokens: 131072
+# RouteLLM input_token_rate: 0.0000006
+# RouteLLM output_token_rate: 0.0000022
 base_model = "zhipuai/glm-4.6"
-reasoning_options = []
+reasoning = false
 
 [cost]
 input = 0.6
