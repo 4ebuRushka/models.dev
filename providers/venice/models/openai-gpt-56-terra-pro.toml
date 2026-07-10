@@ -11,6 +11,7 @@ values = ["none", "low", "medium", "high", "xhigh", "max"]
 input = 3.125
 output = 18.75
 cache_read = 0.3125
+cache_write = 3.90625
 
 [limit]
 context = 1_000_000
