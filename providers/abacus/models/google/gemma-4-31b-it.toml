@@ -7,7 +7,8 @@
 # RouteLLM input_token_rate: 0.00000014
 # RouteLLM output_token_rate: 0.0000004
 base_model = "google/gemma-4-31b-it"
-reasoning = false
+reasoning = true
+reasoning_options = []
 
 [cost]
 input = 0.14
