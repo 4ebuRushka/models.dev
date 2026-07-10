@@ -1,8 +1,4 @@
-# Reasoning: EBCloud's OpenAI-compatible endpoint returns reasoning content via
-# `reasoning_content` (see [interleaved] on each model), but the model API
-# reference below documents no dedicated effort/budget/toggle parameter for
-# controlling reasoning depth. reasoning_options left empty until a control is
-# verified. https://docs.ebtech.com/ai/model-api.html (accessed 2026-07-10)
+# https://docs.ebtech.com/ai/model-api.html (accessed 2026-07-10)
 name = "EBCloud"
 npm = "@ai-sdk/openai-compatible"
 api = "https://maas-api.ebcloud.com/v1"
