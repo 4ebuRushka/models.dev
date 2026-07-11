@@ -2,4 +2,4 @@ name = "InferX"
 env = ["INFERX_API_KEY"]
 npm = "@ai-sdk/openai-compatible"
 api = "https://model.inferx.net/v1"
-doc = "https://inferx.net"
+doc = "https://model.inferx.net/endpoints"
