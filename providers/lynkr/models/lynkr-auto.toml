@@ -1,6 +1,18 @@
+# Lynkr's lynkr-auto is a virtual router model: the gateway scores each request
+# on complexity and routes it to the user-configured tier model (local
+# Ollama/llama.cpp for simple requests, configured cloud providers for complex).
+# Sources (accessed 2026-07-11):
+# - release_date: first public release of the Lynkr repo/npm package,
+#   https://github.com/Fast-Editor/Lynkr (repo created 2025-12-03) and
+#   https://www.npmjs.com/package/lynkr
+# - tool_call: OpenAI- and Anthropic-compatible endpoints forward tool
+#   definitions and tool_use blocks, https://github.com/Fast-Editor/Lynkr/blob/main/documentation/api.md
+# - cost/limits: depend entirely on the backend model Lynkr routes to;
+#   zeros and conservative context/output values are placeholders, matching
+#   the convention for self-hosted gateway entries.
 name = "Lynkr Auto (complexity routing)"
 description = "Virtual model: Lynkr scores each request on complexity and routes it to the tier model the user configured (local Ollama/llama.cpp for simple requests, configured cloud providers for complex ones)."
-family = "lynkr"
+family = "auto"
 release_date = "2025-12-03"
 last_updated = "2026-07-11"
 attachment = false
@@ -9,8 +21,6 @@ temperature = true
 tool_call = true
 open_weights = false
 
-# Cost and limits depend entirely on the backend model Lynkr routes to;
-# zeros/conservative defaults are placeholders for this self-hosted gateway.
 [cost]
 input = 0
 output = 0
