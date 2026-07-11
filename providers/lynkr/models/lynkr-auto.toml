@@ -1,0 +1,24 @@
+name = "Lynkr Auto (complexity routing)"
+description = "Virtual model: Lynkr scores each request on complexity and routes it to the tier model the user configured (local Ollama/llama.cpp for simple requests, configured cloud providers for complex ones)."
+family = "lynkr"
+release_date = "2025-12-03"
+last_updated = "2026-07-11"
+attachment = false
+reasoning = false
+temperature = true
+tool_call = true
+open_weights = false
+
+# Cost and limits depend entirely on the backend model Lynkr routes to;
+# zeros/conservative defaults are placeholders for this self-hosted gateway.
+[cost]
+input = 0
+output = 0
+
+[limit]
+context = 128_000
+output = 8_192
+
+[modalities]
+input = ["text"]
+output = ["text"]
