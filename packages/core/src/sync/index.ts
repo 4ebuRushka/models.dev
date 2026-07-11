@@ -8,16 +8,21 @@ import { anthropic } from "./providers/anthropic.js";
 import { baseten } from "./providers/baseten.js";
 import { chutes } from "./providers/chutes.js";
 import { cloudflareWorkersAi } from "./providers/cloudflare-workers-ai.js";
+import { crossmodel } from "./providers/crossmodel.js";
 import { deepinfra } from "./providers/deepinfra.js";
 import { digitalocean } from "./providers/digitalocean.js";
+import { empiriolabs } from "./providers/empiriolabs.js";
 import { google } from "./providers/google.js";
 import { huggingface } from "./providers/huggingface.js";
+import { kilo } from "./providers/kilo.js";
 import { llmgateway } from "./providers/llmgateway.js";
 import { openai } from "./providers/openai.js";
 import { openrouter } from "./providers/openrouter.js";
 import { ovhcloud } from "./providers/ovhcloud.js";
+import { pioneer } from "./providers/pioneer.js";
 import { vercel } from "./providers/vercel.js";
 import { venice } from "./providers/venice.js";
+import { wandb } from "./providers/wandb.js";
 import { xai } from "./providers/xai.js";
 
 const ExistingModelType = AuthoredModelShape.partial()
@@ -91,39 +96,49 @@ export const providers: {
   baseten: SyncProvider<any>;
   chutes: SyncProvider<any>;
   "cloudflare-workers-ai": SyncProvider<any>;
+  crossmodel: SyncProvider<any>;
   deepinfra: SyncProvider<any>;
   digitalocean: SyncProvider<any>;
+  empiriolabs: SyncProvider<any>;
   google: SyncProvider<any>;
+  kilo: SyncProvider<any>;
   huggingface: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
   openai: SyncProvider<any>;
   openrouter: SyncProvider<any>;
   ovhcloud: SyncProvider<any>;
+  pioneer: SyncProvider<any>;
   vercel: SyncProvider<any>;
   venice: SyncProvider<any>;
+  wandb: SyncProvider<any>;
   xai: SyncProvider<any>;
 } = {
   anthropic,
   baseten,
   chutes,
   "cloudflare-workers-ai": cloudflareWorkersAi,
+  crossmodel,
   deepinfra,
   digitalocean,
+  empiriolabs,
   google,
+  kilo,
   huggingface,
   llmgateway,
   openai,
   openrouter,
   ovhcloud,
+  pioneer,
   vercel,
   venice,
+  wandb,
   xai,
 };
 
 export const groups = {
-  aggregators: ["huggingface", "llmgateway", "openrouter", "vercel"],
+  aggregators: ["crossmodel", "empiriolabs", "huggingface", "kilo", "llmgateway", "openrouter", "vercel"],
   cloudflare: ["cloudflare-workers-ai"],
-  direct: ["anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "openai", "ovhcloud", "venice", "xai"],
+  direct: ["anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "openai", "ovhcloud", "pioneer", "venice", "wandb", "xai"],
 } as const;
 
 type ProviderID = keyof typeof providers;
@@ -210,10 +225,13 @@ export async function syncProvider<SourceModel>(
     }
     const parsed = SyncedAuthoredModel.safeParse(stripUndefined({
       id: translated.id,
-      ...preserveReasoningOptions(
-        translatedModel,
+      ...preserveDescription(
+        preserveReasoningOptions(
+          translatedModel,
+          existing.get(relativePath)?.authored,
+          resolvedReasoning,
+        ),
         existing.get(relativePath)?.authored,
-        resolvedReasoning,
       ),
     }));
     if (!parsed.success) {
@@ -359,6 +377,12 @@ export function preserveBaseModel(model: SyncedModel, existing: ExistingModel | 
     base_model: existing.base_model,
     base_model_omit: existing.base_model_omit,
   };
+}
+
+export function preserveDescription(model: SyncedModel, existing: ExistingModel | undefined): SyncedModel {
+  if (model.description !== undefined) return model;
+  if (existing?.description === undefined) return model;
+  return { ...model, description: existing.description } as SyncedModel;
 }
 
 export function preserveReasoningOptions(
@@ -692,7 +716,12 @@ async function writeReport(target: string, results: SyncResult[]) {
 }
 
 function quote(value: string) {
-  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  return `"${value
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"')
+    .replaceAll("\n", "\\n")
+    .replaceAll("\r", "\\r")
+    .replaceAll("\t", "\\t")}"`;
 }
 
 // Preserve the leading comment block (header) authored at the top of a TOML file.

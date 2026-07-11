@@ -23,6 +23,65 @@ label = "Hugging Face"
 url = "https://huggingface.co/stepfun-ai/Step-3.7-Flash"
 
 [[benchmarks]]
+name = "SWE-Bench Pro"
+score = 56.3
+metric = "resolve rate"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "SWE-Bench Verified"
+score = 76.5
+metric = "resolved"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "Terminal-Bench"
+score = 59.6
+metric = "success rate"
+version = "2.1"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "Humanity's Last Exam"
+score = 47.2
+metric = "accuracy"
+variant = "with tools"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "BrowseComp"
+score = 75.8
+metric = "accuracy"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "Toolathlon"
+score = 49.5
+metric = "success rate"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "GDPval"
+score = 45.8
+metric = "wins or ties"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
+name = "ClawEval"
+score = 67.1
+metric = "pass^3"
+version = "1.1"
+source = "https://static.stepfun.com/blog/step-3.7-flash/"
+date = "2026-05-29"
+
+[[benchmarks]]
 name = "Artificial Analysis Coding Index"
 score = 37.1
 metric = "index"

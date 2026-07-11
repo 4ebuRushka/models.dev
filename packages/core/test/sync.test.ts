@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
 import {
+  anthropic,
   buildAnthropicModel,
   parseAnthropicPricing,
   type AnthropicModel,
@@ -18,9 +19,24 @@ import {
   resolveDigitalOceanBaseModel,
   type DigitalOceanSourceModel,
 } from "../src/sync/providers/digitalocean.js";
-import { buildOpenRouterModel, openrouter, type OpenRouterModel } from "../src/sync/providers/openrouter.js";
+import {
+  buildEmpiriolabsModel,
+  empiriolabs,
+  resolveEmpiriolabsBaseModel,
+  type EmpiriolabsModel,
+} from "../src/sync/providers/empiriolabs.js";
+import {
+  buildOpenRouterModel,
+  openrouter,
+  resolveCanonicalBaseModel,
+  type OpenRouterModel,
+} from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import { openai, parseOpenAIModels } from "../src/sync/providers/openai.js";
+import { resolveVeniceBaseModel } from "../src/sync/providers/venice.js";
+import { buildVercelModel, vercel } from "../src/sync/providers/vercel.js";
+import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
+import { buildXAIModel } from "../src/sync/providers/xai.js";
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {
@@ -129,6 +145,42 @@ test("labels Anthropic aliases as latest", () => {
   expect(model.name).toBe("Claude Sonnet 5 (latest)");
 });
 
+test("Anthropic sync preserves base model inheritance", () => {
+  const resolved = {
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+    description: "Flagship Claude model",
+    release_date: "2025-11-24",
+    last_updated: "2025-11-24",
+    attachment: true,
+    reasoning: true,
+    tool_call: true,
+    knowledge: "2025-05",
+    open_weights: false,
+    cost: { input: 5, output: 25 },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text" as const, "image" as const], output: ["text" as const] },
+  };
+  const translated = anthropic.translateModel(anthropicModel({
+    id: "claude-opus-4-5",
+    canonical_id: "claude-opus-4-5-20251101",
+    display_name: "Claude Opus 4.5",
+    created_at: "2025-11-24T00:00:00Z",
+    max_input_tokens: 200_000,
+    max_tokens: 64_000,
+  }), {
+    existing: () => resolved,
+    authored: () => ({ base_model: "anthropic/claude-opus-4-5" }),
+  });
+
+  expect(translated?.model).toMatchObject({
+    base_model: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5 (latest)",
+  });
+  expect(translated?.model).not.toHaveProperty("knowledge");
+  expect(translated?.model).not.toHaveProperty("release_date");
+});
+
 test("filters customer-owned OpenAI models from availability tracking", () => {
   expect(parseOpenAIModels({
     object: "list",
@@ -200,25 +252,40 @@ function digitalOceanModel(overrides: Partial<DigitalOceanSourceModel> = {}): Di
   return {
     id: "anthropic-claude-4.6-sonnet",
     name: "Claude Sonnet 4.6",
-    lifecycle_status: "available",
+    lifecycle_status: "active",
     type: "chat",
     thinking: true,
+    reasoning_efforts: ["low", "medium", "high"],
     context_window: 1_000_000,
+    max_output_tokens: 8_192,
+    availability: ["serverless"],
     modalities: { input: ["text", "image", "pdf"], output: ["text"] },
     settings: [{ name: "max_tokens", max: 64_000 }],
     created_at: "2026-02-17T00:00:00Z",
     pricing: {
       input: 3,
       output: 15,
-      inputOver200k: 6,
-      outputOver200k: 22.5,
+      cacheRead: 0.3,
     },
     ...overrides,
   };
 }
 
-test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
-  const model = buildDigitalOceanModel(digitalOceanModel(), {
+test("syncs DigitalOcean catalog limits and extended pricing thresholds", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel({
+    pricing: {
+      input: 3,
+      output: 15,
+      cacheRead: 0.3,
+      extended: {
+        context: 272_000,
+        input: 6,
+        output: 22.5,
+        cacheRead: 0.6,
+        cacheWrite: 7.5,
+      },
+    },
+  }), {
     name: "Claude Sonnet 4.6",
     description: "Curated DigitalOcean description",
     family: "claude-sonnet",
@@ -230,7 +297,6 @@ test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
     temperature: true,
     tool_call: true,
     open_weights: false,
-    status: "beta",
     cost: {
       input: 2,
       output: 10,
@@ -251,21 +317,20 @@ test("syncs DigitalOcean pricing and preserves curated cache tiers", () => {
   expect(model).toMatchObject({
     description: "Curated DigitalOcean description",
     last_updated: "2026-03-13",
-    status: "beta",
     cost: {
       input: 3,
       output: 15,
       cache_read: 0.3,
       cache_write: 3.75,
       tiers: [{
-        tier: { type: "context", size: 200_000 },
+        tier: { type: "context", size: 272_000 },
         input: 6,
         output: 22.5,
         cache_read: 0.6,
         cache_write: 7.5,
       }],
     },
-    limit: { context: 1_000_000, output: 64_000 },
+    limit: { context: 1_000_000, output: 8_192 },
   });
 });
 
@@ -300,7 +365,7 @@ test("skips existing dedicated-only DigitalOcean models without token pricing", 
   expect(translated).toBeUndefined();
 });
 
-test("syncs existing DigitalOcean image models with zero token limits", () => {
+test("syncs existing DigitalOcean image models with catalog output limits", () => {
   const existing = {
     name: "GPT Image 1.5",
     description: "Image generation model",
@@ -320,6 +385,7 @@ test("syncs existing DigitalOcean image models with zero token limits", () => {
     id: "openai-gpt-image-1.5",
     name: "GPT Image 1.5",
     context_window: undefined,
+    max_output_tokens: 16_384,
     modalities: { input: ["text", "image"], output: ["text", "image"] },
     settings: [],
     pricing: { input: 6, output: 12 },
@@ -330,11 +396,11 @@ test("syncs existing DigitalOcean image models with zero token limits", () => {
 
   expect(translated?.model).toMatchObject({
     cost: { input: 6, output: 12 },
-    limit: { context: 0, output: 0 },
+    limit: { context: 0, output: 16_384 },
   });
 });
 
-test("filters unmanaged DigitalOcean models and joins pricing names", () => {
+test("filters unmanaged DigitalOcean models and joins catalog data by ID", () => {
   const models = parseDigitalOceanModels({
     models: [
       digitalOceanModel({ id: "kimi-k2.5", name: "Kimi K2", pricing: undefined }),
@@ -346,16 +412,118 @@ test("filters unmanaged DigitalOcean models and joins pricing names", () => {
         pricing: undefined,
       }),
     ],
-    pricing: [
-      { name: "Kimi K2.5 Input Tokens", slug: "input", model: "DigitalOcean-Hosted Models", price: { rate: 0.5 } },
-      { name: "Kimi K2.5 Output Tokens", slug: "output", model: "DigitalOcean-Hosted Models", price: { rate: 2.4 } },
+    catalog: [
+      {
+        model_id: "kimi-k2.5",
+        name: "Kimi K2.5",
+        context_window: "256000",
+        max_output_tokens: "32768",
+        availability: ["serverless", "dedicated"],
+        pricing: {
+          input_price_per_million: 0.000000375,
+          output_price_per_million: 0.000002025,
+          cache_read_input_price_per_million: 0.000000203,
+        },
+        pricing_detail: {
+          variants: [{
+            tier: "MODEL_PRICING_TIER_EXTENDED_272K",
+            mode: "MODEL_BILLING_MODE_INTERACTIVE",
+            prices: {
+              input_price_per_million: 0.00000075,
+              output_price_per_million: 0.000003,
+            },
+          }],
+        },
+      },
+      {
+        model_id: "bge-m3",
+        name: "BGE M3",
+        availability: ["serverless"],
+      },
     ],
   });
 
   expect(models).toHaveLength(1);
   expect(models[0]).toMatchObject({
     id: "kimi-k2.5",
-    pricing: { input: 0.5, output: 2.4 },
+    context_window: "256000",
+    max_output_tokens: "32768",
+    pricing: {
+      input: 0.375,
+      output: 2.025,
+      cacheRead: 0.203,
+      extended: {
+        context: 272_000,
+        input: 0.75,
+        output: 3,
+      },
+    },
+  });
+});
+
+test("maps DigitalOcean 1M catalog pricing to its 200K threshold", () => {
+  const models = parseDigitalOceanModels({
+    models: [digitalOceanModel({ pricing: undefined })],
+    catalog: [{
+      model_id: "anthropic-claude-4.6-sonnet",
+      name: "Claude Sonnet 4.6",
+      context_window: "1000000",
+      max_output_tokens: "64000",
+      availability: ["serverless"],
+      modalities: { input: ["text", "image"], output: ["text"] },
+      pricing: {
+        input_price_per_million: 0.000003,
+        output_price_per_million: 0.000015,
+      },
+      pricing_detail: {
+        variants: [{
+          tier: "MODEL_PRICING_TIER_EXTENDED_1M",
+          mode: "MODEL_BILLING_MODE_INTERACTIVE",
+          prices: {
+            input_price_per_million: 0.000006,
+            output_price_per_million: 0.0000225,
+          },
+        }],
+      },
+    }],
+  });
+
+  expect(models[0]?.pricing?.extended).toEqual({
+    context: 200_000,
+    input: 6,
+    output: 22.5,
+    cacheRead: undefined,
+    cacheWrite: undefined,
+  });
+});
+
+test("syncs DigitalOcean reasoning capability, efforts, and lifecycle status", () => {
+  const model = buildDigitalOceanModel(digitalOceanModel({
+    lifecycle_status: "deprecated",
+    thinking: false,
+    reasoning_efforts: ["none", "low", "medium", "high", "max", "unsupported"],
+  }), {
+    name: "Claude Sonnet 4.6",
+    description: "Curated DigitalOcean description",
+    family: "claude-sonnet",
+    release_date: "2026-02-17",
+    last_updated: "2026-03-13",
+    attachment: true,
+    reasoning: false,
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    temperature: true,
+    tool_call: true,
+    open_weights: false,
+    status: "beta",
+    cost: { input: 3, output: 15 },
+    limit: { context: 200_000, output: 64_000 },
+    modalities: { input: ["text", "image"], output: ["text"] },
+  });
+
+  expect(model).toMatchObject({
+    status: "deprecated",
+    reasoning: true,
+    reasoning_options: [{ type: "effort", values: ["none", "low", "medium", "high", "max"] }],
   });
 });
 
@@ -370,6 +538,7 @@ test("new DigitalOcean base models inherit intrinsic capabilities", () => {
       id: "openai-gpt-5.5",
       name: "GPT-5.5",
       thinking: undefined,
+      reasoning_efforts: undefined,
     }),
     undefined,
     "openai/gpt-5.5",
@@ -382,6 +551,60 @@ test("new DigitalOcean base models inherit intrinsic capabilities", () => {
   expect(model).not.toHaveProperty("knowledge");
   expect(model).not.toHaveProperty("reasoning");
   expect(model).not.toHaveProperty("temperature");
+});
+
+test("xAI sync factors inherited base model fields", () => {
+  const model = buildXAIModel(
+    {
+      id: "grok-4.5",
+      created: Date.parse("2026-06-29T00:00:00Z") / 1000,
+      input_modalities: ["text", "image"],
+      output_modalities: ["text"],
+      prompt_text_token_price: 20_000,
+      cached_prompt_text_token_price: 5_000,
+      completion_text_token_price: 60_000,
+      max_prompt_length: 500_000,
+    },
+    {
+      base_model: "xai/grok-4.5",
+      name: "Grok 4.5",
+      description: "xAI's latest Grok for chat, coding, agentic tools, and lower hallucination risk",
+      family: "grok",
+      release_date: "2026-07-08",
+      last_updated: "2026-07-08",
+      attachment: true,
+      reasoning: true,
+      reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+      temperature: true,
+      tool_call: true,
+      structured_output: true,
+      open_weights: false,
+      cost: {
+        input: 2,
+        output: 6,
+        cache_read: 0.5,
+        tiers: [{ tier: { size: 200_000 }, input: 4, output: 12, cache_read: 1 }],
+      },
+      limit: { context: 500_000, output: 500_000 },
+      modalities: { input: ["text", "image"], output: ["text"] },
+    },
+  );
+
+  expect(model).toMatchObject({
+    base_model: "xai/grok-4.5",
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    cost: {
+      input: 2,
+      output: 6,
+      cache_read: 0.5,
+      tiers: [{ tier: { size: 200_000 }, input: 4, output: 12, cache_read: 1 }],
+    },
+  });
+  expect(model).not.toHaveProperty("name");
+  expect(model).not.toHaveProperty("family");
+  expect(model).not.toHaveProperty("release_date");
+  expect(model).not.toHaveProperty("last_updated");
+  expect(model).not.toHaveProperty("limit");
 });
 
 test("skips new DigitalOcean models with incomplete pricing or limits", () => {
@@ -399,8 +622,45 @@ test("fetches every page of the DigitalOcean catalog", async () => {
   const fetcher = ((input: string | URL | Request) => {
     const url = String(input);
     requests.push(url);
-    if (url.includes("static-content")) {
-      return Promise.resolve(new Response(JSON.stringify({ gradient: { models: [] } })));
+    if (url.includes("/catalog/first-catalog-id")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: {
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "Stale First Detail",
+          context_window: "50",
+          max_output_tokens: "10",
+          availability: ["dedicated"],
+          modalities: { input: ["text", "image"], output: ["text"] },
+          pricing: { input_price_per_million: 0.000009, output_price_per_million: 0.000009 },
+          pricing_detail: { variants: [] },
+        },
+      })));
+    }
+    if (url.includes("/catalog/second-catalog-id")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: { id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] },
+      })));
+    }
+    if (url.includes("/catalog") && url.includes("page=2")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: [{ id: "second-catalog-id", model_id: "second", name: "Second", availability: ["serverless"] }],
+        meta: { total: 2, page: 2, pages: 2 },
+      })));
+    }
+    if (url.includes("/catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: [{
+          id: "first-catalog-id",
+          model_id: "first",
+          name: "First",
+          context_window: "100",
+          max_output_tokens: "90",
+          availability: ["serverless"],
+          pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+        }],
+        meta: { total: 2, page: 1, pages: 2 },
+      })));
     }
     if (url.includes("?page=2")) {
       return Promise.resolve(new Response(JSON.stringify({ models: [second] })));
@@ -413,7 +673,17 @@ test("fetches every page of the DigitalOcean catalog", async () => {
 
   const result = await fetchDigitalOceanModels("test-key", fetcher);
   expect(result.models.map((model) => model.id)).toEqual(["first", "second"]);
-  expect(requests).toHaveLength(3);
+  expect(result.catalog.map((model) => model.model_id)).toEqual(["first", "second"]);
+  expect(result.catalog[0]).toMatchObject({
+    name: "First",
+    context_window: "100",
+    max_output_tokens: "90",
+    availability: ["serverless"],
+    pricing: { input_price_per_million: 0.000001, output_price_per_million: 0.000002 },
+    modalities: { input: ["text", "image"], output: ["text"] },
+    pricing_detail: { variants: [] },
+  });
+  expect(requests).toHaveLength(6);
 });
 
 function deepInfraModel(model_name: string, tags: string[]): DeepInfraModel {
@@ -568,6 +838,28 @@ test("DeepInfra preserves descriptions for standalone models", () => {
   });
 });
 
+test("W&B preserves curated model dates", () => {
+  const model: WandbModel = {
+    id: "example/model",
+    name: "Example Model",
+    description: "Example model used to verify W&B date preservation",
+    attachment: false,
+    reasoning: false,
+    tool_call: true,
+    release_date: "2024-07-01",
+    last_updated: "2024-07-01",
+    open_weights: true,
+  };
+
+  expect(buildWandbModel(model, {
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
+  })).toMatchObject({
+    release_date: "2024-07-23",
+    last_updated: "2024-07-23",
+  });
+});
+
 test("formats reasoning efforts from lowest to highest", () => {
   const content = formatToml({
     id: "example/model",
@@ -614,6 +906,64 @@ test("syncs OpenRouter reasoning efforts from model metadata", () => {
       { type: "effort", values: ["max", "xhigh", "high", "medium", "low"] },
     ],
   });
+});
+
+test("uses OpenRouter model context when top provider reports a shorter context", () => {
+  const model = buildOpenRouterModel(openRouterModel({
+    context_length: 1_048_576,
+    top_provider: {
+      context_length: 32_000,
+      max_completion_tokens: 8_192,
+    },
+  }), undefined);
+
+  expect(model).toMatchObject({
+    limit: {
+      context: 1_048_576,
+      output: 8_192,
+    },
+  });
+});
+
+test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
+  const model = buildOpenRouterModel(openRouterModel({
+    id: "openai/gpt-5.6-sol-pro",
+    name: "OpenAI: GPT-5.6 Sol Pro",
+    knowledge_cutoff: "2026-02-16",
+    context_length: 1_050_000,
+    top_provider: {
+      context_length: 1_050_000,
+      max_completion_tokens: 128_000,
+    },
+  }), undefined);
+
+  expect([
+    resolveCanonicalBaseModel("openai/gpt-5.6-luna-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-sol-pro"),
+    resolveCanonicalBaseModel("openai/gpt-5.6-terra-pro"),
+  ]).toEqual([
+    "openai/gpt-5.6-luna",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+  ]);
+  expect(model).toMatchObject({
+    base_model: "openai/gpt-5.6-sol",
+    name: "GPT-5.6 Sol Pro",
+  });
+  expect("family" in model).toBe(false);
+  expect("release_date" in model).toBe(false);
+});
+
+test("resolves Venice Pro routes to canonical OpenAI metadata", () => {
+  expect([
+    resolveVeniceBaseModel("openai-gpt-56-luna-pro", "GPT-5.6 Luna Pro"),
+    resolveVeniceBaseModel("openai-gpt-56-sol-pro", "GPT-5.6 Sol Pro"),
+    resolveVeniceBaseModel("openai-gpt-56-terra-pro", "GPT-5.6 Terra Pro"),
+  ]).toEqual([
+    "openai/gpt-5.6-luna",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+  ]);
 });
 
 test("preserves authored OpenRouter reasoning options over model metadata", () => {
@@ -684,6 +1034,59 @@ test("factors new LLM Gateway models against the canonical base metadata", () =>
   });
   expect("name" in model).toBe(false);
   expect("modalities" in model).toBe(false);
+});
+
+test("factors aliased LLM Gateway routes against canonical metadata", () => {
+  const model = buildLLMGatewayModel(llmGatewayModel({
+    id: "glm-5-2",
+    name: "GLM-5.2 (260617)",
+    family: "bytedance",
+    context_length: 1_024_000,
+    pricing: {
+      prompt: "1.4e-6",
+      completion: "4.4e-6",
+      input_cache_read: "0.26e-6",
+    },
+  }), undefined);
+
+  expect(model).toEqual({
+    base_model: "zhipuai/glm-5.2",
+    cost: {
+      input: 1.4,
+      output: 4.4,
+      cache_read: 0.26,
+    },
+    limit: {
+      context: 1_024_000,
+    },
+  });
+});
+
+test("parses Vercel pricing tiers with an implicit zero minimum", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "openai/gpt-5.6-luna",
+      name: "GPT-5.6 Luna",
+      created: 1_780_963_200,
+      context_window: 1_050_000,
+      max_tokens: 128_000,
+      type: "language",
+      pricing: {
+        input: "0.000001",
+        output: "0.000006",
+        input_cache_read: "0.0000001",
+        input_cache_read_tiers: [
+          { cost: "0.0000001", max: 272_000 },
+          { cost: "0.0000002", min: 272_000 },
+        ],
+      },
+    }],
+  });
+
+  expect(model).toBeDefined();
+  expect(buildVercelModel(model!, undefined)).toMatchObject({
+    cost: { input: 1, output: 6, cache_read: 0.1 },
+  });
 });
 
 test("skips LLM Gateway base_model factoring when no metadata entry exists", () => {
@@ -791,6 +1194,71 @@ test("skips an unavailable OpenRouter stub with no authored file", () => {
   });
 
   expect(translated).toBeUndefined();
+});
+
+test("parses nullable EmpirioLabs release dates", () => {
+  expect(empiriolabs.parseModels({
+    data: [{ id: "unknown-text-model", category: "text", model_released_at: null }],
+  })).toHaveLength(1);
+});
+
+test("syncs EmpirioLabs pricing tiers and reasoning controls", () => {
+  const model: EmpiriolabsModel = {
+    id: "minimax-m3",
+    display_name: "MiniMax M3",
+    category: "text",
+    context_length: 1_000_000,
+    max_output_tokens: null,
+    capabilities: { reasoning: true },
+    features: ["reasoning", "function_calling"],
+    structured_output: "json_object",
+    input_modalities: ["text", "image", "video"],
+    output_modalities: ["text"],
+    supported_parameters: [
+      { name: "temperature" },
+      { name: "max_completion_tokens", max: 524_288 },
+      { name: "enable_thinking" },
+      { name: "reasoning_effort", options: ["none", "low", "medium", "high", "max"] },
+      { name: "thinking_budget", min: 1_024, max: 32_768 },
+    ],
+    pricing: [
+      { prompt: "0.000000225", completion: "0.0000009", input_cache_read: "0.000000045" },
+      {
+        prompt: "0.00000045",
+        completion: "0.0000018",
+        input_cache_read: "0.000000045",
+        min_context: 512_000,
+      },
+    ],
+  };
+
+  expect(buildEmpiriolabsModel(model, { base_model: "minimax/MiniMax-M3" })).toMatchObject({
+    base_model: "minimax/MiniMax-M3",
+    structured_output: true,
+    reasoning_options: [
+      { type: "toggle" },
+      { type: "effort", values: ["none", "low", "medium", "high", "max"] },
+      { type: "budget_tokens", min: 1_024, max: 32_768 },
+    ],
+    cost: {
+      input: 0.225,
+      output: 0.9,
+      cache_read: 0.045,
+      tiers: [{
+        tier: { type: "context", size: 512_000 },
+        input: 0.45,
+        output: 1.8,
+        cache_read: 0.045,
+      }],
+    },
+    limit: { context: 1_000_000, output: 524_288 },
+  });
+});
+
+test("maps EmpirioLabs aliases to canonical model metadata", () => {
+  expect(resolveEmpiriolabsBaseModel("fugu-ultra")).toBe("sakana/fugu-ultra");
+  expect(resolveEmpiriolabsBaseModel("muse-spark-1-1")).toBe("meta/muse-spark-1.1");
+  expect(resolveEmpiriolabsBaseModel("step-3-5-flash")).toBe("stepfun/step-3.5-flash");
 });
 
 function unavailableStub(): OpenRouterModel {
