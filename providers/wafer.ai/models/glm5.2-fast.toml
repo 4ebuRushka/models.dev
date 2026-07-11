@@ -1,15 +1,9 @@
+# Source: wafer.ai API response (.local/response.json) and docs.wafer.ai/wafer-pass
+base_model = "zhipuai/glm-5.2"
 name = "GLM5.2-Fast"
 description = "The same model served for high TPS."
-family = "glm"
-release_date = "2026-06-13"
 last_updated = "2026-07-11"
-attachment = false
-reasoning = true
-reasoning_options = [{ type = "toggle" }]
-temperature = true
-tool_call = true
-structured_output = true
-open_weights = true
+reasoning_options = [{ type = "toggle" }, { type = "effort", values = ["none", "low", "medium", "high", "xhigh", "max"] }]
 
 [cost]
 input = 3.00
@@ -19,8 +13,3 @@ cache_write = 0
 
 [limit]
 context = 1_048_576
-output = 131_072
-
-[modalities]
-input = ["text"]
-output = ["text"]
