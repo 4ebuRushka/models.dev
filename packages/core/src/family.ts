@@ -46,6 +46,9 @@ export const ModelFamilyValues = [
   // Meta Llama
   "llama",
 
+  // Meta Muse
+  "muse",
+
   // Alibaba Qwen
   "qwen",
   "qwen3.5",
@@ -72,6 +75,9 @@ export const ModelFamilyValues = [
   "kimi-k2",
   "kimi-free",
   "kimi-thinking",
+
+  // Poolside Laguna
+  "laguna",
 
   // Mistral family
   "mistral",
@@ -349,6 +355,9 @@ export const ModelFamilyValues = [
   // Auto router
   "auto",
   "model-router",
+
+  // Conductor
+  "fugu",
 
   // V0
   "v0",
