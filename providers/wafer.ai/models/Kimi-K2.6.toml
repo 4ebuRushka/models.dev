@@ -1,7 +1,7 @@
-# Source: wafer.ai API response (.local/response.json) and docs.wafer.ai/wafer-pass
-# - Pricing: input $1.14, output $4.80, cache_read $0.19 (API confirmed)
-# - Non-ZDR: zdr_supported=false in API response; Wafer Pass exclusion per tier="serverless_only"
-# - Modalities: vision=true (text/image/video input) from API capabilities.vision
+# Source: https://docs.wafer.ai/serverless/api-reference (accessed 2026-07-11)
+# - Pricing: input $1.14, output $4.80, cache_read $0.19
+# - Non-ZDR: zdr_supported=false; Wafer Pass exclusion per tier="serverless_only"
+# - Modalities: vision=true (text/image/video input)
 name = "Kimi-K2.6"
 description = "Kimi K2.6 sparse MoE model with a 262K context window. Available serverless and not included in standard Wafer Pass. Non-ZDR only: requests with `Wafer-ZDR: required` are rejected."
 family = "kimi-k2"

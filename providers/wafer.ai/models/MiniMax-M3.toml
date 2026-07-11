@@ -1,6 +1,6 @@
 # Source: wafer.ai API response (.local/response.json) and docs.wafer.ai/wafer-pass
 base_model = "minimax/MiniMax-M3"
-description = "MiniMax M3 — MSA-architecture model with a 1M context window (inputs over 512K bill at a long-context rate), native multimodal (vision) understanding, and strong coding/agentic performance. Available serverless."
+description = "MiniMax M3 — MSA-architecture model with a 1M context window, native multimodal (vision) understanding, and strong coding/agentic performance. Available serverless."
 last_updated = "2026-07-11"
 structured_output = true
 reasoning_options = [{ type = "toggle" }]
