@@ -1,0 +1,26 @@
+name = "MiniMax-M3"
+description = "MiniMax M3 — MSA-architecture model with a 1M context window (inputs over 512K bill at a long-context rate), native multimodal (vision) understanding, and strong coding/agentic performance. Available serverless."
+family = "minimax"
+release_date = "2026-06-01"
+last_updated = "2026-07-11"
+attachment = true
+reasoning = true
+reasoning_options = [{ type = "toggle" }]
+temperature = true
+tool_call = true
+structured_output = true
+open_weights = true
+
+[cost]
+input = 0.33
+output = 1.32
+cache_read = 0.07
+cache_write = 0
+
+[limit]
+context = 1_048_576
+output = 128_000
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]
