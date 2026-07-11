@@ -1,8 +1,9 @@
-# Source: wafer.ai API response (.local/response.json) and docs.wafer.ai/wafer-pass
+# Sources (accessed 2026-07-11):
+# - Pricing and model details: https://app.wafer.ai/models
+# - Reasoning controls: https://docs.wafer.ai/serverless/api-reference#reasoning-controls
 base_model = "zhipuai/glm-5.2"
 name = "GLM5.2-Fast"
 description = "The same model served for high TPS."
-last_updated = "2026-07-11"
 reasoning_options = [{ type = "toggle" }, { type = "effort", values = ["none", "low", "medium", "high", "max"] }]
 
 [interleaved]

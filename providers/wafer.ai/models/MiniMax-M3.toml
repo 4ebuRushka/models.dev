@@ -1,14 +1,21 @@
-# Source: wafer.ai API response (.local/response.json) and docs.wafer.ai/wafer-pass
+# Sources (accessed 2026-07-11):
+# - Pricing and model details: https://app.wafer.ai/models
+# - Reasoning controls: https://docs.wafer.ai/serverless/api-reference#reasoning-controls
 base_model = "minimax/MiniMax-M3"
-description = "MiniMax M3 — MSA-architecture model with a 1M context window, native multimodal (vision) understanding, and strong coding/agentic performance. Available serverless."
-last_updated = "2026-07-11"
 structured_output = true
-reasoning_options = [{ type = "toggle" }]
+reasoning_options = [{ type = "toggle" }, { type = "effort", values = ["none", "low", "medium", "high", "max"] }]
 
 [cost]
 input = 0.33
 output = 1.32
 cache_read = 0.07
+cache_write = 0
+
+[[cost.tiers]]
+tier = { size = 512_000 }
+input = 0.66
+output = 2.64
+cache_read = 0.13
 cache_write = 0
 
 [limit]
