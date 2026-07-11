@@ -4,8 +4,8 @@ reasoning_options = []
 
 [cost]
 input = 0.72
-output = 3.49
-cache_read = 0.159
+output = 3.5
+cache_read = 0.15
 
 [modalities]
 input = ["text", "image"]
