@@ -5,5 +5,5 @@ reasoning_options = []
 field = "reasoning_content"
 
 [cost]
-input = 0.4289
+input = 0.4286
 output = 0.8571
