@@ -2,8 +2,7 @@ base_model = "alibaba/qwen3.6-27b"
 attachment = false
 status = "beta"
 
-[[reasoning_options]]
-type = "toggle"
+reasoning_options = []
 
 [limit]
 context = 196_608

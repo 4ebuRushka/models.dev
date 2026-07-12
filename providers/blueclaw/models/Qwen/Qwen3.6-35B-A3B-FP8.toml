@@ -3,8 +3,7 @@ name = "Qwen3.6 35B A3B FP8"
 attachment = false
 status = "beta"
 
-[[reasoning_options]]
-type = "toggle"
+reasoning_options = []
 
 [limit]
 context = 131_072
