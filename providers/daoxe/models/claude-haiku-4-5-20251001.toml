@@ -7,6 +7,4 @@ reasoning_options = []
 input = 1
 output = 5
 cache_read = 0.1
-
-[provider]
-shape = "responses"
+cache_write = 5
