@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { SyncProvider } from "../index.js";
+import type { ExistingModel, SyncProvider, SyncedFullModel } from "../index.js";
 import { buildOpenRouterModel, type OpenRouterModel } from "./openrouter.js";
 
 const API_ENDPOINT = "https://api.ambient.xyz/v1/models";
@@ -93,9 +93,12 @@ export const ambient = {
   },
   translateModel(model, context) {
     if (!model.is_ready) return undefined;
-    const built = buildOpenRouterModel(toOpenRouterShape(model), context.existing(model.id));
+    const existing = context.existing(model.id);
+    const built = buildOpenRouterModel(toOpenRouterShape(model), existing);
     const reasoning = model.supported_features.includes("reasoning");
-    const withOptions = reasoning ? { ...built, reasoning_options: [] } : built;
+    const withOptions = reasoning
+      ? { ...built, reasoning_options: ambientReasoningOptions(model, existing) }
+      : built;
     const aliasName = ambientAliasName(model.id);
     return {
       id: model.id,
@@ -103,6 +106,18 @@ export const ambient = {
     };
   },
 } satisfies SyncProvider<AmbientModel>;
+
+function ambientReasoningOptions(
+  model: AmbientModel,
+  existing: ExistingModel | undefined,
+): SyncedFullModel["reasoning_options"] {
+  if (model.openrouter?.slug !== "z-ai/glm-5.2") return existing?.reasoning_options ?? [];
+  return [
+    { type: "toggle" },
+    { type: "effort", values: ["none", "minimal", "low", "medium", "high", "xhigh", "max"] },
+    { type: "budget_tokens" },
+  ];
+}
 
 function ambientAliasName(id: string): string | undefined {
   if (!id.startsWith("ambient/")) return undefined;
