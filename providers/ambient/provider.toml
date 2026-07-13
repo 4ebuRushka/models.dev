@@ -1,6 +1,5 @@
-# Ambient's OpenAPI schema exposes reasoning.enabled and reasoning.effort.
-# GLM-5.2 supports enable/disable and the listed effort levels
-# (sources accessed 2026-07-13).
+# Ambient's OpenAPI schema exposes reasoning.effort. GLM-5.2 has two effective
+# effort levels, high and max (sources accessed 2026-07-13).
 # https://api.ambient.xyz/openapi.json
 # https://docs.z.ai/guides/capabilities/thinking
 name = "Ambient"
