@@ -1,0 +1,22 @@
+name = "amazon--nova-micro"
+description = "amazon--nova-micro"
+family = "nova-micro"
+release_date = "2026-07-14"
+last_updated = "2026-07-14"
+attachment = false
+reasoning = false
+temperature = true
+tool_call = true
+open_weights = false
+
+[cost]
+input = 0.03
+output = 0.1
+
+[limit]
+context = 131072
+output = 4096
+
+[modalities]
+input = ["text"]
+output = ["text"]

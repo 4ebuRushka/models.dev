@@ -1,0 +1,13 @@
+name = "mistralai--mistral-small"
+base_model = "mistral/mistral-small-2603"
+last_updated = "2026-07-14"
+reasoning_options = [{ type = "effort", values = ["none", "minimal", "low", "medium", "high"] }]
+open_weights = true
+
+[cost]
+input = 0.07
+output = 0.28
+
+[modalities]
+input = ["text"]
+output = ["text"]
