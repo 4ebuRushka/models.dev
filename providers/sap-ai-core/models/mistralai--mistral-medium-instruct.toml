@@ -1,3 +1,4 @@
+# Deployed as version "2505" on SAP AI Core; older versions share the same model name and can be selected at deployment time.
 base_model = "mistral/mistral-medium-2505"
 
 name = "mistralai--mistral-medium-instruct"

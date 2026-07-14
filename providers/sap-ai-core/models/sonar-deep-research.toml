@@ -5,7 +5,8 @@ release_date = "2025-02-01"
 last_updated = "2025-09-01"
 attachment = false
 reasoning = true
-# SAP orchestration natively maps the listed reasoning effort values, even if the model does not natively support them.
+# Not all models support the full range of configuration options. Where possible, orchestration maps unsupported values to the closest equivalent.
+# Reasoning support: https://help.sap.com/docs/sap-ai-core/generative-ai/reasoning?locale=en-US (accessed 2026-07-14)
 reasoning_options = [{ type = "effort", values = ["minimal", "low", "medium", "high"] }]
 temperature = false
 tool_call = false
