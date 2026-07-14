@@ -1,4 +1,4 @@
-name = "MiniMax Token Plan (minimaxi.com)"
+name = "MiniMax Token Plan (China)"
 env = ["MINIMAX_API_KEY"]
 npm = "@ai-sdk/anthropic"
 doc = "https://platform.minimaxi.com/docs/token-plan/intro"

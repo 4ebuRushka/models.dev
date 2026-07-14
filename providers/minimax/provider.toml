@@ -1,4 +1,4 @@
-name = "MiniMax (minimax.io)"
+name = "MiniMax"
 env = ["MINIMAX_API_KEY"]
 npm = "@ai-sdk/anthropic"
 doc = "https://platform.minimax.io/docs/guides/quickstart"

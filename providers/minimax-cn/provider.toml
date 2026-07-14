@@ -1,4 +1,4 @@
-name = "MiniMax (minimaxi.com)"
+name = "MiniMax (China)"
 env = ["MINIMAX_API_KEY"]
 npm = "@ai-sdk/anthropic"
 doc = "https://platform.minimaxi.com/docs/guides/quickstart"
