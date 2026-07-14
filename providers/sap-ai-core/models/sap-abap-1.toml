@@ -1,5 +1,5 @@
 name = "sap-abap-1"
-description = "sap-abap-1"
+description = "SAP-hosted model for ABAP code generation and enterprise development tasks"
 release_date = "2025-11-26"
 last_updated = "2025-11-26"
 attachment = false

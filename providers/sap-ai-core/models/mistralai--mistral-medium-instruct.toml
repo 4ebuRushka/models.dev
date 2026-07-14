@@ -1,12 +1,6 @@
+base_model = "mistral/mistral-medium-2505"
+
 name = "mistralai--mistral-medium-instruct"
-description = "mistralai--mistral-medium-instruct"
-release_date = "2025-05-07"
-last_updated = "2025-05-07"
-attachment = true
-reasoning = false
-temperature = true
-tool_call = true
-open_weights = true
 
 [cost]
 input = 0.36
@@ -14,8 +8,4 @@ output = 1.22
 
 [limit]
 context = 128_000
-output = 131_072
-
-[modalities]
-input = ["text", "image"]
-output = ["text"]
+output = 128_000

@@ -1,5 +1,5 @@
 name = "amazon--nova-lite"
-description = "amazon--nova-lite"
+description = "Efficient model for low-latency assistance, extraction, and routine automation"
 family = "nova-lite"
 release_date = "2024-12-03"
 last_updated = "2024-12-03"

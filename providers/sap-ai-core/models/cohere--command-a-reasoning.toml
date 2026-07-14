@@ -1,11 +1,13 @@
+# Cannot use base_model: models/cohere/command-a-reasoning-08-2025.toml does not exist in the top-level models/ directory.
 name = "cohere--command-a-reasoning"
-description = "cohere--command-a-reasoning"
+description = "Cohere command model for multilingual enterprise agents, tools, and chat"
 family = "command-a"
 release_date = "2025-08-21"
 last_updated = "2025-08-21"
 attachment = false
 reasoning = true
 # SAP orchestration natively maps the listed reasoning effort values, even if the model does not natively support them.
+# model_params.thinking = {"type": "enabled", "token_budget": N} or {"type": "disabled"}; token_budget >= 1. https://docs.cohere.com/docs/reasoning (accessed 2026-07-14)
 reasoning_options = [{ type = "effort", values = ["none", "minimal", "low", "medium", "high"] }, { type = "budget_tokens", min = 1 }]
 temperature = true
 tool_call = true
