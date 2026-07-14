@@ -1,6 +1,5 @@
 name = "gpt-4.1-nano"
 base_model = "openai/gpt-4.1-nano"
-last_updated = "2026-07-14"
 open_weights = false
 
 [cost]
