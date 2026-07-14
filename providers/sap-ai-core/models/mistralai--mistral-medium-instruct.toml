@@ -1,8 +1,8 @@
 name = "mistralai--mistral-medium-instruct"
 description = "mistralai--mistral-medium-instruct"
-release_date = "2026-07-14"
-last_updated = "2026-07-14"
-attachment = false
+release_date = "2025-05-07"
+last_updated = "2025-05-07"
+attachment = true
 reasoning = false
 temperature = true
 tool_call = true
@@ -13,9 +13,9 @@ input = 0.36
 output = 1.22
 
 [limit]
-context = 131072
-output = 4096
+context = 128_000
+output = 131_072
 
 [modalities]
-input = ["text"]
+input = ["text", "image"]
 output = ["text"]

@@ -1,11 +1,12 @@
 name = "cohere--command-a-reasoning"
 description = "cohere--command-a-reasoning"
 family = "command-a"
-release_date = "2026-07-14"
-last_updated = "2026-07-14"
+release_date = "2025-08-21"
+last_updated = "2025-08-21"
 attachment = false
 reasoning = true
-reasoning_options = [{ type = "effort", values = ["none", "minimal", "low", "medium", "high"] }, { type = "budget_tokens", min = 512 }]
+# SAP orchestration natively maps the listed reasoning effort values, even if the model does not natively support them.
+reasoning_options = [{ type = "effort", values = ["none", "minimal", "low", "medium", "high"] }, { type = "budget_tokens", min = 1 }]
 temperature = true
 tool_call = true
 open_weights = true
@@ -15,8 +16,8 @@ input = 0.63
 output = 5.05
 
 [limit]
-context = 131072
-output = 4096
+context = 256_000
+output = 32_000
 
 [modalities]
 input = ["text"]

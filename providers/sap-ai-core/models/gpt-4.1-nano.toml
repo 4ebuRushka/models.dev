@@ -8,5 +8,5 @@ input = 0.08
 output = 0.26
 
 [modalities]
-input = ["text"]
+input = ["text", "image"]
 output = ["text"]

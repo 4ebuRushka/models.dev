@@ -1,7 +1,7 @@
 name = "text-embedding-3-small"
 description = "text-embedding-3-small"
-release_date = "2026-07-14"
-last_updated = "2026-07-14"
+release_date = "2024-01-25"
+last_updated = "2024-01-25"
 attachment = false
 reasoning = false
 temperature = false
@@ -13,8 +13,8 @@ input = 0.02
 output = 0
 
 [limit]
-context = 131072
-output = 4096
+context = 8_191
+output = 1_536
 
 [modalities]
 input = ["text"]
