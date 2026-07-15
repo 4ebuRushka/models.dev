@@ -1,3 +1,7 @@
+# Privatemode removed this model in v1.42.0 (deprecated since v1.39.0).
+# This file should be deleted; status = "deprecated" is used as the closest
+# available end-of-life signal because no "removed" status exists.
+# https://docs.privatemode.ai/release/#v1420 (accessed 2026-07-15)
 name = "Gemma 3 27B"
 description = "Open Gemma instruction model for efficient chat and self-hosted deployments"
 family = "gemma"
@@ -10,6 +14,7 @@ release_date = "2025-03-12"
 last_updated = "2025-03-12"
 knowledge = "2024-08"
 open_weights = true
+status = "deprecated"
 
 [cost]
 input = 0.00
