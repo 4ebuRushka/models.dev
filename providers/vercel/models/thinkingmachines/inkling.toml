@@ -1,11 +1,12 @@
 # Sources (accessed 2026-07-16):
 # - https://ai-gateway.vercel.sh/v1/models (thinkingmachines/inkling)
 base_model = "thinkingmachines/inkling"
-name = "Inkling"
-open_weights = true
 reasoning_options = []
 
 [cost]
 input = 1
 output = 4.05
 cache_read = 0.17
+
+[modalities]
+input = ["text", "image", "pdf"]
