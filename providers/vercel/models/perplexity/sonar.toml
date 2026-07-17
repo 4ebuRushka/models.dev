@@ -1,3 +1,5 @@
+# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).
+# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.
 name = "Sonar"
 description = "Sonar search model for current answers, retrieval, and citation-backed chat"
 family = "sonar"
@@ -9,6 +11,10 @@ temperature = true
 tool_call = true
 knowledge = "2025-02"
 open_weights = false
+
+[cost]
+input = 0
+output = 0
 
 [limit]
 context = 127_000

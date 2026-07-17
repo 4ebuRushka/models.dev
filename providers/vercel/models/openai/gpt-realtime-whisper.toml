@@ -1,2 +1,6 @@
 base_model = "openai/gpt-realtime-whisper"
 name = "gpt-realtime-whisper"
+
+[cost]
+input = 0.0002
+output = 0

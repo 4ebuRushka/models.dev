@@ -1111,8 +1111,50 @@ test("parses Vercel pricing tiers with an implicit zero minimum", () => {
 
   expect(model).toBeDefined();
   expect(buildVercelModel(model!, undefined)).toMatchObject({
-    cost: { input: 1, output: 6, cache_read: 0.1 },
+    model: { cost: { input: 1, output: 6, cache_read: 0.1 } },
+    costPlaceholder: false,
   });
+});
+
+test("parses Vercel embedding input-only pricing", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "alibaba/qwen3-embedding-0.6b",
+      name: "Qwen3 Embedding 0.6B",
+      created: 1_780_963_200,
+      type: "embedding",
+      pricing: { input: "0.00000001" },
+    }],
+  });
+
+  expect(buildVercelModel(model!, undefined)).toMatchObject({
+    model: { cost: { input: 0.01, output: 0 } },
+    costPlaceholder: false,
+  });
+});
+
+test("zeros Vercel non-token pricing and seeds a placeholder header", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "bfl/flux-kontext-pro",
+      name: "FLUX.1 Kontext [pro]",
+      created: 1_780_963_200,
+      type: "image",
+      pricing: { image: "0.04" },
+    }],
+  });
+
+  const built = buildVercelModel(model!, undefined);
+  expect(built).toMatchObject({
+    model: { cost: { input: 0, output: 0 } },
+    costPlaceholder: true,
+  });
+
+  const translated = vercel.translateModel(model!, {
+    existing: () => undefined,
+    authored: () => undefined,
+  });
+  expect(translated?.header).toContain("Cost currently zeroed");
 });
 
 test("skips LLM Gateway base_model factoring when no metadata entry exists", () => {

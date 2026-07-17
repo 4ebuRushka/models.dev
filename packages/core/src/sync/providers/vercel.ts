@@ -53,6 +53,10 @@ const VercelResponse = z.object({
 
 export type VercelModel = z.infer<typeof VercelModel>;
 
+/** Leading header for models whose Vercel pricing cannot map to token cost.input/output. */
+export const ZEROED_COST_HEADER =
+  "# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).\n# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.\n";
+
 export const vercel = {
   id: "vercel",
   name: "Vercel AI Gateway",
@@ -69,9 +73,13 @@ export const vercel = {
     return VercelResponse.parse(raw).data;
   },
   translateModel(model, context) {
+    const existing = context.existing(model.id);
+    const built = buildVercelModel(model, existing);
     return {
       id: model.id,
-      model: buildVercelModel(model, context.existing(model.id)),
+      model: built.model,
+      // Only seed the header when first materializing a zeroed placeholder; existing headers persist on refresh.
+      header: built.costPlaceholder ? ZEROED_COST_HEADER : undefined,
     };
   },
   sameModel(current, desired) {
@@ -79,7 +87,16 @@ export const vercel = {
   },
 } satisfies SyncProvider<VercelModel>;
 
-export function buildVercelModel(model: VercelModel, existing: ExistingModel | undefined): SyncedModel {
+export type BuiltVercelModel = {
+  model: SyncedModel;
+  /** True when cost was zeroed because API pricing could not map to token in/out. */
+  costPlaceholder: boolean;
+};
+
+export function buildVercelModel(
+  model: VercelModel,
+  existing: ExistingModel | undefined,
+): BuiltVercelModel {
   const tags = new Set(model.tags);
   const releaseDate = model.released
     ? dateFromTimestamp(model.released)
@@ -93,7 +110,7 @@ export function buildVercelModel(model: VercelModel, existing: ExistingModel | u
   const input = model.id.startsWith("openai/") && context > output
     ? context - output
     : undefined;
-  const cost = buildCost(model.pricing, existing?.cost);
+  const { cost, placeholder: costPlaceholder } = buildCost(model.pricing, existing?.cost);
 
   const synced: SyncedFullModel = {
     name: existing?.name ?? model.name,
@@ -169,10 +186,15 @@ export function buildVercelModel(model: VercelModel, existing: ExistingModel | u
   };
 
   const baseModel = existing?.base_model ?? resolveCanonicalBaseModel(model.id);
-  if (baseModel === undefined) return synced;
+  if (baseModel === undefined) {
+    return { model: synced, costPlaceholder };
+  }
 
   const { last_updated: _lastUpdated, ...overrides } = synced;
-  return factorBaseModel(baseModel, overrides, synced.limit, existing?.base_model_omit);
+  return {
+    model: factorBaseModel(baseModel, overrides, synced.limit, existing?.base_model_omit),
+    costPlaceholder,
+  };
 }
 
 function dateFromTimestamp(timestamp: number) {
@@ -187,17 +209,43 @@ function price(value: string | undefined) {
     : undefined;
 }
 
-function buildCost(pricing: VercelModel["pricing"], existing?: ExistingModel["cost"]) {
+type BuiltCost = NonNullable<ExistingModel["cost"]>;
+
+/**
+ * Map Vercel pricing into token cost fields when possible.
+ * - input/output (+ cache) token prices → cost.input / cost.output
+ * - input-only (embeddings, speech, some rerank) → cost.input, cost.output = 0
+ * - non-token shapes (image, video duration, etc.) or missing → explicit zeros
+ */
+export function buildCost(
+  pricing: VercelModel["pricing"],
+  existing?: ExistingModel["cost"],
+): { cost: BuiltCost; placeholder: boolean } {
   const input = price(pricing?.input_tiers?.[0]?.cost ?? pricing?.input);
   const output = price(pricing?.output_tiers?.[0]?.cost ?? pricing?.output);
-  if (input === undefined || output === undefined) return undefined;
+  const cache_read = price(pricing?.input_cache_read_tiers?.[0]?.cost ?? pricing?.input_cache_read);
+  const cache_write = price(pricing?.input_cache_write_tiers?.[0]?.cost ?? pricing?.input_cache_write);
+
+  if (input !== undefined || output !== undefined) {
+    return {
+      cost: {
+        input: input ?? 0,
+        output: output ?? 0,
+        reasoning: existing?.reasoning,
+        cache_read,
+        cache_write,
+        tiers: existing?.tiers,
+      },
+      placeholder: false,
+    };
+  }
+
   return {
-    input,
-    output,
-    reasoning: existing?.reasoning,
-    cache_read: price(pricing?.input_cache_read_tiers?.[0]?.cost ?? pricing?.input_cache_read),
-    cache_write: price(pricing?.input_cache_write_tiers?.[0]?.cost ?? pricing?.input_cache_write),
-    tiers: existing?.tiers,
+    cost: {
+      input: 0,
+      output: 0,
+    },
+    placeholder: true,
   };
 }
 
@@ -245,15 +293,13 @@ function sameVercelModel(current: ExistingModel, desired: SyncedModel) {
   ];
 
   return fields.every(([currentValue, desiredValue, cost]) => {
-    if (cost && currentValue === 0 && desiredValue === undefined) return true;
-    if (cost && typeof currentValue === "number" && typeof desiredValue === "number") {
-      return Math.abs(currentValue - desiredValue) <= 0.001;
-    }
-    if (
-      (currentValue === 0 || desiredValue === 0)
-      && (typeof currentValue === "number" || typeof desiredValue === "number")
-    ) {
-      return true;
+    if (cost) {
+      // Missing authored cost vs explicit zero/value must rewrite so cost is never absent.
+      if (currentValue === undefined && desiredValue !== undefined) return false;
+      if (typeof currentValue === "number" && typeof desiredValue === "number") {
+        return Math.abs(currentValue - desiredValue) <= 0.001;
+      }
+      return currentValue === desiredValue;
     }
     return JSON.stringify(currentValue) === JSON.stringify(desiredValue);
   });

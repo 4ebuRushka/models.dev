@@ -1,3 +1,5 @@
+# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).
+# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.
 name = "Cohere Rerank 3.5"
 description = "Reranking model for improving retrieval quality in search and recommendation systems"
 family = "o"
@@ -8,6 +10,10 @@ reasoning = false
 temperature = true
 tool_call = false
 open_weights = false
+
+[cost]
+input = 0
+output = 0
 
 [limit]
 context = 4_096

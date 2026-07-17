@@ -77,7 +77,13 @@ export interface SyncProvider<SourceModel> {
       existing(id: string): ExistingModel | undefined;
       authored(id: string): ExistingModel | undefined;
     },
-  ): { id: string; model: SyncedModel; metadata?: { id: string; model: SyncedMetadata } } | undefined;
+  ): {
+    id: string;
+    model: SyncedModel;
+    /** Seeded only when the existing file has no leading header; existing headers always win. */
+    header?: string;
+    metadata?: { id: string; model: SyncedMetadata };
+  } | undefined;
 }
 
 export interface SyncResult {
@@ -242,9 +248,11 @@ export async function syncProvider<SourceModel>(
       throw parsed.error;
     }
 
+    const existingHeader = existing.get(relativePath)?.header ?? "";
+    const header = existingHeader || (translated.header ?? "");
     desired.set(relativePath, {
       model: parsed.data,
-      content: (existing.get(relativePath)?.header ?? "") + formatToml(parsed.data),
+      content: header + formatToml(parsed.data),
     });
   }
 

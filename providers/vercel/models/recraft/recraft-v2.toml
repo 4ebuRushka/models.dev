@@ -1,3 +1,5 @@
+# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).
+# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.
 name = "Recraft V2"
 description = "Image model for prompt-driven generation, editing, and visual design workflows"
 family = "recraft"
@@ -8,6 +10,10 @@ reasoning = false
 temperature = true
 tool_call = false
 open_weights = false
+
+[cost]
+input = 0
+output = 0
 
 [limit]
 context = 512

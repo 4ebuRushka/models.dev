@@ -1,3 +1,5 @@
+# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).
+# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.
 name = "GLM-4.6V-Flash"
 description = "GLM vision model for visual reasoning, documents, and multimodal agents"
 family = "glm"
@@ -5,15 +7,21 @@ release_date = "2025-09-30"
 last_updated = "2025-09-30"
 attachment = true
 reasoning = true
-reasoning_options = [{ type = "toggle" }]
 temperature = true
 tool_call = true
-open_weights = false
 knowledge = "2024-10"
+open_weights = false
+
+[[reasoning_options]]
+type = "toggle"
+
+[cost]
+input = 0
+output = 0
 
 [limit]
-context = 128000
-output = 24000
+context = 128_000
+output = 24_000
 
 [modalities]
 input = ["text", "image", "pdf"]

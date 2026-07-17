@@ -1,3 +1,5 @@
+# Cost currently zeroed: Vercel pricing for this model is not token-based (e.g. per-image, per-second video).
+# Better non-token cost tracking is planned; until then keep an explicit zero cost so pricing is never absent.
 name = "Sonar Reasoning Pro"
 description = "Web-grounded reasoning model for multi-step research and cited answers"
 family = "sonar-reasoning"
@@ -5,11 +7,18 @@ release_date = "2025-02-19"
 last_updated = "2025-02-19"
 attachment = false
 reasoning = true
-reasoning_options = [{ type = "effort", values = ["minimal", "low", "medium", "high"] }]
 temperature = true
 tool_call = false
 knowledge = "2025-09"
 open_weights = false
+
+[[reasoning_options]]
+type = "effort"
+values = ["minimal", "low", "medium", "high"]
+
+[cost]
+input = 0
+output = 0
 
 [limit]
 context = 127_000
