@@ -17,7 +17,8 @@ cache_read = 1.00
 cache_write = 12.50
 
 [limit]
-context = 200_000
+# https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison
+context = 1_000_000
 
 [provider]
 npm = "@ai-sdk/anthropic"
