@@ -1,6 +1,8 @@
 # Sources (accessed 2026-07-20):
 # https://docs.qwencloud.com/token-plan/personal/token-plan-personal-overview
 # https://platform.qianwenai.com/docs/token-plan/personal/token-plan-personal-overview
+# https://docs.qwencloud.com/developer-guides/getting-started/text-generation-models
+# https://platform.qianwenai.com/docs/developer-guides/getting-started/text-generation-models
 # https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/opencode
 # https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/opencode
 # https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/kilo-cli
@@ -20,7 +22,7 @@ tool_call = true
 open_weights = false
 
 [limit]
-context = 983_616
+context = 1_000_000
 output = 131_072
 
 [modalities]
