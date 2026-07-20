@@ -1,13 +1,14 @@
 # Sources (accessed 2026-07-20):
 # https://docs.qwencloud.com/token-plan/personal/token-plan-personal-overview
 # https://docs.qwencloud.com/token-plan/personal/token-plan-personal-quickstart
+# https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/opencode
 # https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/kilo-cli
 # https://docs.qwencloud.com/developer-guides/text-generation/thinking
 # https://docs.qwencloud.com/api-reference/chat/openai-chat
 # Thinking is always enabled. In thinking mode, temperature defaults to 0.6
-# and values below 0.6 are raised to 0.6. The Token Plan Kilo guide documents
-# low/high/xhigh, while the Chat API reference documents low/medium/xhigh; both
-# specify xhigh as the default, so both middle-tier spellings are exposed here.
+# and values below 0.6 are raised to 0.6. The OpenCode guide documents
+# low/high/xhigh (default xhigh) and configures a 99072-token thinking budget
+# for the international endpoint. The API permits budgets up to 262144.
 # `thinking_budget` (0..262144) is an alternative and cannot be combined with
 # `reasoning_effort`. API: {"reasoning_effort":"high"} or
 # {"thinking_budget":16384}. `preserve_thinking` defaults to true, so clients
@@ -15,7 +16,7 @@
 
 base_model = "alibaba/qwen3.8-max-preview"
 reasoning_options = [
-  { type = "effort", values = ["low", "medium", "high", "xhigh"] },
+  { type = "effort", values = ["low", "high", "xhigh"] },
   { type = "budget_tokens", min = 0, max = 262_144 },
 ]
 status = "beta"
