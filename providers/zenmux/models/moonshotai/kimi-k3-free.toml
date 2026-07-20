@@ -1,7 +1,9 @@
 # API: thinking.type = "enabled" | "disabled" | "adaptive"; in adaptive mode the
 # reasoning depth is set by output_config.effort, which only accepts "max".
-# Pricing: free tier (accessed 2026-07-20).
-base_model = "moonshotai/kimi-k3-free"
+# Pricing: free tier via ZenMux (accessed 2026-07-20).
+# https://docs.zenmux.ai
+base_model = "moonshotai/kimi-k3"
+name = "Kimi K3 (Free)"
 
 [[reasoning_options]]
 type = "toggle"
