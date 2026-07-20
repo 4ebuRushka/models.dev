@@ -6,17 +6,18 @@
 # https://platform.qianwenai.com/docs/developer-guides/text-generation/thinking
 # https://platform.qianwenai.com/docs/api-reference/chat/openai-chat
 # Thinking is always enabled. In thinking mode, temperature defaults to 0.6
-# and values below 0.6 are raised to 0.6. The OpenCode guide documents
-# low/high/xhigh (default xhigh) and configures a 262144-token thinking budget
-# for the China endpoint.
-# `thinking_budget` (0..262144) is an alternative and cannot be combined with
-# `reasoning_effort`. API: {"reasoning_effort":"high"} or
+# and values below 0.6 are raised to 0.6. This provider uses the OpenAI-compatible
+# Chat API, whose native qwen3.8 effort values are low/medium/xhigh (default
+# xhigh); the standard high value is accepted as an alias and maps to xhigh.
+# The OpenCode guide labels its tiers low/high/xhigh and configures a 262144-token
+# thinking budget for the China endpoint. `thinking_budget` (0..262144) cannot
+# be combined with `reasoning_effort`. API: {"reasoning_effort":"medium"} or
 # {"thinking_budget":16384}. `preserve_thinking` defaults to true, so clients
 # must replay every historical `reasoning_content` value unchanged.
 
 base_model = "alibaba/qwen3.8-max-preview"
 reasoning_options = [
-  { type = "effort", values = ["low", "high", "xhigh"] },
+  { type = "effort", values = ["low", "medium", "xhigh"] },
   { type = "budget_tokens", min = 0, max = 262_144 },
 ]
 status = "beta"
