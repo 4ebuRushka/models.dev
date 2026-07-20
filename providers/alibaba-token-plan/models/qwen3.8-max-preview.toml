@@ -1,0 +1,14 @@
+# Sources (accessed 2026-07-20):
+# https://docs.qwencloud.com/token-plan/personal/token-plan-personal-overview
+# https://docs.qwencloud.com/token-plan/personal/token-plan-personal-quickstart
+# No per-request reasoning control is documented for this preview model yet.
+
+base_model = "alibaba/qwen3.8-max-preview"
+reasoning_options = []
+status = "beta"
+
+[cost]
+input = 0
+output = 0
+cache_read = 0
+cache_write = 0
