@@ -1,6 +1,8 @@
 # Sources (accessed 2026-07-20):
 # https://docs.qwencloud.com/token-plan/personal/token-plan-personal-overview
 # https://platform.qianwenai.com/docs/token-plan/personal/token-plan-personal-overview
+# https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/kilo-cli
+# https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/kilo-cli
 # https://github.com/QwenLM/qwen-code/issues/7198
 # https://github.com/QwenLM/qwen-code/pull/7199
 
@@ -16,8 +18,8 @@ tool_call = true
 open_weights = false
 
 [limit]
-context = 1_000_000
-output = 65_536
+context = 983_616
+output = 131_072
 
 [modalities]
 input = ["text", "image", "video"]
