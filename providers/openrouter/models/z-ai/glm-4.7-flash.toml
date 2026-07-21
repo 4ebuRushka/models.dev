@@ -8,3 +8,6 @@ field = "reasoning_details"
 [cost]
 input = 0.0605
 output = 0.4
+
+[limit]
+context = 202_752
