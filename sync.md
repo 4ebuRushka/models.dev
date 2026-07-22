@@ -111,13 +111,10 @@ The workflow:
 - Labels every sync PR with `automation`, `model-sync`, and `provider:<id>`.
 - Trusted full-catalog providers also get `sync-automerge` and `gh pr merge --auto --squash` so they merge once required checks pass.
 
-Trusted auto-merge providers (edit `AUTOMERGE_PROVIDERS` in the workflow to change):
+Trusted auto-merge providers (edit `AUTOMERGE_PROVIDERS` in the workflow to change). Only providers whose catalog API exposes real reasoning controls (not just a boolean), plus full create/update/delete:
 
 - `openrouter`
-- `kilo`
 - `venice`
-- `chutes`
-- `ovhcloud`
 - `wandb`
 
 Repo setup required for auto-merge:

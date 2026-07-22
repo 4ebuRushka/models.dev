@@ -97,7 +97,7 @@ jobs:
           BRANCH: automation/sync-models-${{ matrix.provider }}
           PROVIDER: ${{ matrix.provider }}
           # Full-catalog syncs that are safe to merge after CI without human review.
-          AUTOMERGE_PROVIDERS: openrouter kilo venice chutes ovhcloud wandb
+          AUTOMERGE_PROVIDERS: openrouter venice wandb
           TITLE: "chore(sync): update ${{ matrix.name }} model catalog"
         run: |
           tee -a "$GITHUB_STEP_SUMMARY" < .sync/model-sync-report.md >/dev/null
