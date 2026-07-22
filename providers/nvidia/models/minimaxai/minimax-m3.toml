@@ -1,6 +1,12 @@
 base_model = "minimax/MiniMax-M3"
 reasoning_options = [{ type = "toggle" }]
 
+[variants.none.chat_template_kwargs]
+thinking_mode = "disabled"
+
+[variants.thinking.chat_template_kwargs]
+thinking_mode = "enabled"
+
 [cost]
 input = 0.0
 output = 0.0

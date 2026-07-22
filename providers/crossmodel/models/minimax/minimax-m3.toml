@@ -3,6 +3,12 @@ base_model = "minimax/MiniMax-M3"
 [[reasoning_options]]
 type = "toggle"
 
+[variants.none.thinking]
+type = "disabled"
+
+[variants.thinking.thinking]
+type = "adaptive"
+
 [cost]
 input = 0.33
 output = 1.32

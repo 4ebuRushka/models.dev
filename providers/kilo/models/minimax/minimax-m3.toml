@@ -3,6 +3,12 @@ name = "MiniMax: MiniMax M3"
 last_updated = "2026-06-30"
 reasoning_options = [{ type = "toggle" }]
 
+[variants.none.reasoning]
+enabled = false
+
+[variants.thinking.reasoning]
+enabled = true
+
 [cost]
 input = 0.3
 output = 1.2

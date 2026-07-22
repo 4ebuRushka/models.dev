@@ -1,6 +1,12 @@
 base_model = "minimax/MiniMax-M3"
 reasoning_options = [{ type = "toggle" }]
 
+[variants.none.thinking]
+type = "disabled"
+
+[variants.thinking.thinking]
+type = "adaptive"
+
 [cost]
 input = 0.60
 output = 2.40
@@ -8,3 +14,6 @@ output = 2.40
 [provider]
 npm = "@ai-sdk/anthropic"
 api = "https://zenmux.ai/api/anthropic/v1"
+
+[provider.body.thinking]
+type = "adaptive"

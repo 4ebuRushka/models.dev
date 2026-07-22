@@ -11,6 +11,12 @@ tool_call = true
 knowledge = "2025-01"
 open_weights = true
 
+[variants.none.thinking]
+type = "disabled"
+
+[variants.thinking.thinking]
+type = "adaptive"
+
 [cost]
 input = 0.3
 output = 1.2
@@ -32,3 +38,6 @@ output = ["text"]
 
 [provider]
 npm = "@ai-sdk/anthropic"
+
+[provider.body.thinking]
+type = "adaptive"

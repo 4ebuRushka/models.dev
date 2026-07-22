@@ -7,6 +7,12 @@ family = "minimax-m3"
 reasoning_options = [{ type = "toggle" }]
 structured_output = true
 
+[variants.none.chat_template_kwargs]
+thinking_mode = "disabled"
+
+[variants.thinking.chat_template_kwargs]
+thinking_mode = "enabled"
+
 [cost]
 input = 0.28
 output = 1.1
