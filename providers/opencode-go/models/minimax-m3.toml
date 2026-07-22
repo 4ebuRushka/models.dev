@@ -38,6 +38,4 @@ output = ["text"]
 
 [provider]
 npm = "@ai-sdk/anthropic"
-
-[provider.body.thinking]
-type = "adaptive"
+variant = "thinking"

@@ -113,7 +113,7 @@ items are **hard blockers**; the last two are **strongly recommended** but not b
 
 - Provider model TOMLs may declare exact request bodies under `variants.<id>` when semantic `reasoning_options` are insufficient to describe the provider's wire format.
 - Variant values are copied unchanged into clients' ordinary model variants; do not use them for client-specific transformations.
-- Keep provider defaults separate under `provider.body`. Selecting no variant preserves that default.
+- Select an ordinary default variant with `provider.variant`. Use `provider.body` only for defaults shared by every variant.
 - Example:
   ```toml
   [variants.none.chat_template_kwargs]

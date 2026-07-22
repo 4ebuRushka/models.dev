@@ -271,6 +271,7 @@ const ModelBase = z.object({
       npm: z.string().optional(),
       api: z.string().optional(),
       shape: z.enum(["responses", "completions"]).optional(),
+      variant: z.string().optional(),
       body: z.record(JsonValue).optional(),
       headers: z.record(z.string()).optional(),
     })
@@ -300,6 +301,18 @@ function refineModel<
       {
         message: "Cannot set reasoning_options when reasoning is false",
         path: ["reasoning_options"],
+      },
+    )
+    .refine(
+      (data) => {
+        return (
+          data.provider?.variant === undefined ||
+          data.variants?.[data.provider.variant] !== undefined
+        );
+      },
+      {
+        message: "Provider default variant must reference a declared variant",
+        path: ["provider", "variant"],
       },
     )
     .refine(

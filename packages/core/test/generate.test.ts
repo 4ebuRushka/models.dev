@@ -203,8 +203,9 @@ type = "disabled"
 [variants.thinking.thinking]
 type = "adaptive"
 
-[provider.body.thinking]
-type = "adaptive"
+[provider]
+variant = "thinking"
+body = { thinking = { type = "adaptive" } }
 
 [cost]
 input = 1.25
@@ -219,7 +220,10 @@ output = 2.50
           none: { thinking: { type: "disabled" } },
           thinking: { thinking: { type: "adaptive" } },
         },
-        provider: { body: { thinking: { type: "adaptive" } } },
+        provider: {
+          variant: "thinking",
+          body: { thinking: { type: "adaptive" } },
+        },
       });
     });
   });

@@ -45,6 +45,17 @@ describe("model schema", () => {
       thinking: { chat_template_kwargs: { thinking_mode: "enabled" } },
     });
   });
+
+  test("rejects an undeclared provider default variant", () => {
+    const model = baseModel({
+      reasoning: true,
+      reasoning_options: [{ type: "toggle" }],
+      variants: { none: { thinking: { type: "disabled" } } },
+      provider: { variant: "thinking" },
+    });
+
+    expect(AuthoredModel.safeParse(model).success).toBe(false);
+  });
 });
 
 function baseModel(overrides: Partial<AuthoredModelData>) {

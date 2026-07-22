@@ -14,6 +14,4 @@ output = 2.40
 [provider]
 npm = "@ai-sdk/anthropic"
 api = "https://zenmux.ai/api/anthropic/v1"
-
-[provider.body.thinking]
-type = "adaptive"
+variant = "thinking"

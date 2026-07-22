@@ -37,5 +37,5 @@ output = 128_000
 input = ["text", "image", "video"]
 output = ["text"]
 
-[provider.body.thinking]
-type = "adaptive"
+[provider]
+variant = "thinking"
