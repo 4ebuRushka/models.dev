@@ -3,12 +3,7 @@ import { z } from "zod";
 import { ModelFamily } from "./family";
 
 type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: JsonValue }
-  | JsonValue[];
+  string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 
 const JsonValue: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
@@ -25,7 +20,16 @@ const ReasoningEffortValue = z.preprocess(
   (value) => (value === "null" ? null : value),
   z.union([
     z.null(),
-    z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max", "default"]),
+    z.enum([
+      "none",
+      "minimal",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "default",
+    ]),
   ]),
 );
 
@@ -219,6 +223,7 @@ const ModelBase = z.object({
   attachment: z.boolean(),
   reasoning: z.boolean(),
   reasoning_options: z.array(ReasoningOption).optional(),
+  variants: z.record(z.record(JsonValue)).optional(),
   tool_call: z.boolean(),
   interleaved: z
     .union([
@@ -273,7 +278,8 @@ const ModelBase = z.object({
 });
 
 function refineModel<
-  Output extends z.infer<typeof ModelShape> | z.infer<typeof AuthoredModelShape>,
+  Output extends
+    z.infer<typeof ModelShape> | z.infer<typeof AuthoredModelShape>,
   Def extends z.ZodTypeDef,
   Input,
 >(schema: z.ZodType<Output, Def, Input>) {

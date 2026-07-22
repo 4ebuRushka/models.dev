@@ -37,8 +37,16 @@ function stable(value: unknown): string {
 describe("catalog generation", () => {
   test("base_model can factor metadata without changing provider JSON", async () => {
     await withFixture(async (root) => {
-      await write(root, "providers/direct/provider.toml", providerToml("Direct"));
-      await write(root, "providers/factored/provider.toml", providerToml("Factored"));
+      await write(
+        root,
+        "providers/direct/provider.toml",
+        providerToml("Direct"),
+      );
+      await write(
+        root,
+        "providers/factored/provider.toml",
+        providerToml("Factored"),
+      );
       await write(root, "models/lab/model.toml", modelMetadataToml());
       await write(
         root,
@@ -100,7 +108,11 @@ cache_read = 0.125
 
   test("base_model_omit removes inherited metadata fields", async () => {
     await withFixture(async (root) => {
-      await write(root, "providers/provider/provider.toml", providerToml("Provider"));
+      await write(
+        root,
+        "providers/provider/provider.toml",
+        providerToml("Provider"),
+      );
       await write(root, "models/lab/model.toml", modelMetadataToml());
       await write(
         root,
@@ -132,7 +144,11 @@ output = 32_000
 
   test("base_model can inherit sibling fields from partial object overrides", async () => {
     await withFixture(async (root) => {
-      await write(root, "providers/provider/provider.toml", providerToml("Provider"));
+      await write(
+        root,
+        "providers/provider/provider.toml",
+        providerToml("Provider"),
+      );
       await write(root, "models/lab/model.toml", modelMetadataToml());
       await write(
         root,
@@ -169,6 +185,45 @@ input = ["text"]
     });
   });
 
+  test("provider request defaults and variants are emitted unchanged", async () => {
+    await withFixture(async (root) => {
+      await write(
+        root,
+        "providers/provider/provider.toml",
+        providerToml("Provider"),
+      );
+      await write(
+        root,
+        "providers/provider/models/model.toml",
+        `${providerFieldsToml()}
+
+[variants.none.thinking]
+type = "disabled"
+
+[variants.thinking.thinking]
+type = "adaptive"
+
+[provider.body.thinking]
+type = "adaptive"
+
+[cost]
+input = 1.25
+output = 2.50
+`,
+      );
+
+      const providers = await generate(path.join(root, "providers"));
+
+      expect(providers.provider?.models.model).toMatchObject({
+        variants: {
+          none: { thinking: { type: "disabled" } },
+          thinking: { thinking: { type: "adaptive" } },
+        },
+        provider: { body: { thinking: { type: "adaptive" } } },
+      });
+    });
+  });
+
   test("repository provider TOMLs do not use legacy extends tables", async () => {
     const root = path.join(import.meta.dirname, "..", "..", "..");
     const matches: string[] = [];
@@ -191,7 +246,10 @@ input = ["text"]
     for (const [providerID, provider] of Object.entries(providers)) {
       for (const [modelID, model] of Object.entries(provider.models)) {
         const encoded = stable(model);
-        if (encoded.includes("base_model") || encoded.includes("base_model_omit")) {
+        if (
+          encoded.includes("base_model") ||
+          encoded.includes("base_model_omit")
+        ) {
           leaked.push(`${providerID}/${modelID}`);
         }
       }
@@ -228,7 +286,7 @@ input = ["text"]
       "zai",
     ];
     const namespaceDirs = providerNamespaces.filter((namespace) =>
-      existsSync(path.join(root, "models", namespace))
+      existsSync(path.join(root, "models", namespace)),
     );
     const baseModelRefs: string[] = [];
 

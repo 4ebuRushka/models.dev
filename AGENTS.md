@@ -105,9 +105,23 @@ items are **hard blockers**; the last two are **strongly recommended** but not b
   - Plain objects from metadata and provider TOML (`[limit]`, `[modalities]`, …) are **deep-merged**
   - Arrays (e.g. `modalities.input`) and primitives are **replaced** wholesale by the child
   - Any provider field omitted is inherited verbatim from model metadata
-  - `cost`, `provider`, `experimental`, `reasoning_options`, `interleaved`, and `status` are provider-specific and must be declared in provider TOMLs when needed
+  - `cost`, `provider`, `experimental`, `reasoning_options`, `variants`, `interleaved`, and `status` are provider-specific and must be declared in provider TOMLs when needed
 - `base_model_omit` runs **after** the merge and deletes each dot-path from the result. Missing paths are ignored. Ancestor tables that become empty as a result are also pruned.
 - The base model metadata file must exist; `base_model` pointing at a missing `models/` entry is an error
+
+### Provider request variants
+
+- Provider model TOMLs may declare exact request bodies under `variants.<id>` when semantic `reasoning_options` are insufficient to describe the provider's wire format.
+- Variant values are copied unchanged into clients' ordinary model variants; do not use them for client-specific transformations.
+- Keep provider defaults separate under `provider.body`. Selecting no variant preserves that default.
+- Example:
+  ```toml
+  [variants.none.chat_template_kwargs]
+  thinking_mode = "disabled"
+
+  [variants.thinking.chat_template_kwargs]
+  thinking_mode = "enabled"
+  ```
 
 ### Bedrock Naming Patterns
 - Dated models: `-v1:0` suffix (`anthropic.claude-3-5-sonnet-20241022-v1:0.toml`)

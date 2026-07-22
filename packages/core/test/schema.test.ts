@@ -29,6 +29,22 @@ describe("model schema", () => {
 
     expect(AuthoredModel.safeParse(model).success).toBe(false);
   });
+
+  test("accepts provider request variants", () => {
+    const model = baseModel({
+      reasoning: true,
+      reasoning_options: [{ type: "toggle" }],
+      variants: {
+        none: { chat_template_kwargs: { thinking_mode: "disabled" } },
+        thinking: { chat_template_kwargs: { thinking_mode: "enabled" } },
+      },
+    });
+
+    expect(AuthoredModel.parse(model).variants).toEqual({
+      none: { chat_template_kwargs: { thinking_mode: "disabled" } },
+      thinking: { chat_template_kwargs: { thinking_mode: "enabled" } },
+    });
+  });
 });
 
 function baseModel(overrides: Partial<AuthoredModelData>) {
