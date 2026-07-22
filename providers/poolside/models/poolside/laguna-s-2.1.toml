@@ -1,4 +1,4 @@
-base_model = "poolside/laguna-m.1"
+base_model = "poolside/laguna-s-2.1"
 
 [[reasoning_options]]
 type = "toggle" # API: {"chat_template_kwargs": {"enable_thinking": false}}
