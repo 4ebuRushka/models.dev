@@ -84,19 +84,46 @@ jobs:
       - name: Validate models
         run: bun validate
 
+      - name: Setup git committer
+        id: committer
+        uses: ./.github/actions/setup-git-committer
+        with:
+          app-id: ${{ vars.OPENCODE_APP_ID }}
+          app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+
       - name: Report changes
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.committer.outputs.token }}
           BRANCH: automation/sync-models-${{ matrix.provider }}
-          LABELS: automation,model-sync,provider:${{ matrix.provider }}
+          PROVIDER: ${{ matrix.provider }}
+          # Full-catalog syncs that are safe to merge after CI without human review.
+          AUTOMERGE_PROVIDERS: openrouter kilo venice chutes ovhcloud wandb
           TITLE: "chore(sync): update ${{ matrix.name }} model catalog"
         run: |
           tee -a "$GITHUB_STEP_SUMMARY" < .sync/model-sync-report.md >/dev/null
 
+          automerge=false
+          for candidate in $AUTOMERGE_PROVIDERS; do
+            if [ "$candidate" = "$PROVIDER" ]; then
+              automerge=true
+              break
+            fi
+          done
+
+          labels=(automation model-sync "provider:${PROVIDER}")
+          if [ "$automerge" = true ]; then
+            labels+=(sync-automerge)
+          fi
+
           label_args=()
-          IFS=',' read -ra labels <<< "$LABELS"
           for label in "${labels[@]}"; do
-            gh label create "$label" --color "0E8A16" --description "Automated model catalog sync" >/dev/null 2>&1 || true
+            description="Automated model catalog sync"
+            color="0E8A16"
+            if [ "$label" = "sync-automerge" ]; then
+              description="Trusted full-catalog sync; auto-merge after required checks"
+              color="5319E7"
+            fi
+            gh label create "$label" --color "$color" --description "$description" >/dev/null 2>&1 || true
             label_args+=(--label "$label")
           done
 
@@ -105,15 +132,13 @@ jobs:
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch --no-tags --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
           git checkout -B "$BRANCH"
           git add models providers
           git commit -m "$TITLE"
           git push --force-with-lease origin "$BRANCH"
 
-          pr_number="$(gh pr list --head "$BRANCH" --base dev --json number --jq '.[0].number')"
+          pr_number="$(gh pr list --head "$BRANCH" --base dev --json number --jq '.[0].number // empty')"
           if [ -n "$pr_number" ]; then
             gh pr edit "$pr_number" --title "$TITLE" --body-file .sync/model-sync-report.md
             for label in "${labels[@]}"; do
@@ -121,4 +146,10 @@ jobs:
             done
           else
             gh pr create --base dev --head "$BRANCH" --title "$TITLE" --body-file .sync/model-sync-report.md "${label_args[@]}"
+            pr_number="$(gh pr list --head "$BRANCH" --base dev --json number --jq '.[0].number // empty')"
+          fi
+
+          if [ "$automerge" = true ] && [ -n "$pr_number" ]; then
+            echo "Enabling auto-merge for trusted provider sync #$pr_number"
+            gh pr merge "$pr_number" --auto --squash
           fi

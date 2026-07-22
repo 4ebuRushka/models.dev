@@ -105,12 +105,31 @@ The workflow:
 - Discovers sync providers with `bun models:sync --list-providers`.
 - Runs one provider per matrix job with `bun models:sync ${{ matrix.provider }}`.
 - Runs `bun validate`.
+- Mints a short-lived GitHub App token (`vars.OPENCODE_APP_ID` + `secrets.OPENCODE_APP_SECRET`) so pushes and PRs are authored by the App bot and PR CI can run.
 - Creates or updates a provider-specific sync PR only when `providers` changed.
 - Uses `.sync/model-sync-report.md` as the PR body.
+- Labels every sync PR with `automation`, `model-sync`, and `provider:<id>`.
+- Trusted full-catalog providers also get `sync-automerge` and `gh pr merge --auto --squash` so they merge once required checks pass.
+
+Trusted auto-merge providers (edit `AUTOMERGE_PROVIDERS` in the workflow to change):
+
+- `openrouter`
+- `kilo`
+- `venice`
+- `chutes`
+- `ovhcloud`
+- `wandb`
+
+Repo setup required for auto-merge:
+
+- Install the OpenCode GitHub App on `anomalyco/models.dev` (Contents + Pull requests).
+- Set Actions variable `OPENCODE_APP_ID` and secret `OPENCODE_APP_SECRET` (same values as the opencode repo, or a models.dev-only App).
+- Enable auto-merge on the repository.
+- Ensure branch protection on `dev` allows the App bot path (required checks only, or review bypass for the App).
 
 Each provider job checks out `dev` and writes to a fixed provider branch like `automation/sync-models-openrouter`. If that provider's sync PR is already open, later scheduled runs force-update the same branch and edit the existing PR instead of creating another one. Provider jobs do not share unmerged changes with each other; OpenRouter only uses `base_model` for model metadata entries already present on `dev`.
 
-CI automatically picks up providers registered in `providers` in `packages/core/src/sync/index.ts`. Adding a new sync provider there is enough to get an hourly provider-specific sync job, branch, labels, title, and PR naming convention. The workflow only needs manual updates when a new provider requires new secrets or other environment variables.
+CI automatically picks up providers registered in `providers` in `packages/core/src/sync/index.ts`. Adding a new sync provider there is enough to get an hourly provider-specific sync job, branch, labels, title, and PR naming convention. The workflow only needs manual updates when a new provider requires new secrets or other environment variables, or when adding a provider to the auto-merge allowlist.
 
 Actions are pinned by commit SHA. Keep new workflow actions pinned the same way.
 
