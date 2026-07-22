@@ -4,6 +4,7 @@ import { mergeDeep } from "remeda";
 import { z } from "zod";
 
 import { AuthoredModel, AuthoredModelShape, ModelMetadata } from "../schema.js";
+import { openMissingModelIssues } from "./missing-issues.js";
 import { ambient } from "./providers/ambient.js";
 import { anthropic } from "./providers/anthropic.js";
 import { baseten } from "./providers/baseten.js";
@@ -61,7 +62,13 @@ export interface SyncProvider<SourceModel> {
   name: string;
   modelsDir: string;
   metadataNamespace?: string;
+  /** Do not create new local TOMLs for remote-only models. */
   skipCreates?: boolean;
+  /**
+   * When remote models are missing locally, open one GitHub issue per model ID
+   * (deduped). Implies `skipCreates`.
+   */
+  openIssuesForMissing?: boolean;
   deleteMissing?: boolean;
   preserveSymlinks?: boolean;
   preserveBaseModels?: boolean;
@@ -148,6 +155,7 @@ type ProviderID = keyof typeof providers;
 
 interface SyncOptions {
   dryRun?: boolean;
+  openIssues?: boolean;
   newOnly?: boolean;
 }
 
@@ -184,7 +192,8 @@ export async function syncProvider<SourceModel>(
     }
 
     const relativePath = `${translated.id}.toml`;
-    if (provider.skipCreates && !existing.has(relativePath)) {
+    const skipCreates = provider.skipCreates === true || provider.openIssuesForMissing === true;
+    if (skipCreates && !existing.has(relativePath)) {
       skippedRemote.push(translated.id);
       continue;
     }
@@ -357,10 +366,33 @@ export async function syncProvider<SourceModel>(
     }
   }
 
-  const result = summarize(provider, files, unchanged, [
+  const notices = [
     ...provider.skippedNotice?.(skippedRemote) ?? [],
     ...provider.missingNotice?.(missingLocal) ?? [],
-  ]);
+  ];
+
+  if (
+    provider.openIssuesForMissing === true
+    && skippedRemote.length > 0
+    && options.openIssues !== false
+  ) {
+    try {
+      notices.push(
+        ...await openMissingModelIssues(
+          { id: provider.id, name: provider.name, modelsDir: provider.modelsDir },
+          skippedRemote,
+          { dryRun: options.dryRun },
+        ),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const notice = `Failed to open missing-model GitHub issues: ${message}`;
+      notices.push(notice);
+      console.error(notice);
+    }
+  }
+
+  const result = summarize(provider, files, unchanged, notices);
   console.log(
     `${options.dryRun ? "Dry run: " : ""}${result.created} created, ${result.updated} updated, ${result.deleted} removed, ${result.unchanged} unchanged`,
   );
@@ -934,6 +966,7 @@ export async function main(args = process.argv.slice(2)) {
   const results = await syncTargets(target, {
     dryRun: args.includes("--dry-run"),
     newOnly: args.includes("--new-only"),
+    openIssues: !args.includes("--no-issues"),
   });
 
   await writeReport(target, results);

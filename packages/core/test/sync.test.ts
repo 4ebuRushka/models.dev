@@ -5,6 +5,13 @@ import path from "node:path";
 
 import { formatToml, preserveReasoningOptions, syncProvider, type SyncProvider } from "../src/sync/index.js";
 import {
+  missingModelIssueBody,
+  missingModelIssueMarker,
+  missingModelIssueTitle,
+  openMissingModelIssues,
+  parseMissingModelIssueMarker,
+} from "../src/sync/missing-issues.js";
+import {
   anthropic,
   buildAnthropicModel,
   parseAnthropicPricing,
@@ -239,7 +246,7 @@ test("OpenAI availability sync retains models absent from a scoped response", as
           data: [{ id: "gpt-scoped", object: "model", created: 1, owned_by: "system" }],
         };
       },
-    });
+    }, { openIssues: false });
     expect(result.deleted).toBe(0);
     expect(result.unchanged).toBe(1);
     expect(await Bun.file(path.join(modelsDir, "gpt-existing.toml")).exists()).toBe(true);
@@ -1381,3 +1388,143 @@ function openRouterModel(overrides: Partial<OpenRouterModel> = {}): OpenRouterMo
     ...overrides,
   };
 }
+
+test("missing-model issue markers round-trip provider and model ids with slashes", () => {
+  const marker = missingModelIssueMarker("google-vertex", "deepseek-ai/deepseek-v3.2-maas");
+  expect(parseMissingModelIssueMarker(marker)).toEqual({
+    providerId: "google-vertex",
+    modelId: "deepseek-ai/deepseek-v3.2-maas",
+  });
+  expect(missingModelIssueTitle("google", "gemini-3.6-flash")).toBe(
+    "[missing-model] google: gemini-3.6-flash",
+  );
+  const body = missingModelIssueBody(
+    { id: "google", name: "Google", modelsDir: "providers/google/models" },
+    "gemini-3.6-flash",
+  );
+  expect(body).toContain(missingModelIssueMarker("google", "gemini-3.6-flash"));
+  expect(body).toContain("providers/google/models/gemini-3.6-flash.toml");
+});
+
+test("openMissingModelIssues dedupes open issues and creates missing ones", async () => {
+  const calls: string[][] = [];
+  const run = async (args: string[]) => {
+    calls.push(args);
+    if (args[0] === "label") return { code: 0, stdout: "", stderr: "" };
+    if (args[0] === "issue" && args[1] === "list") {
+      const search = args[args.indexOf("--search") + 1] ?? "";
+      if (search.includes("already-tracked")) {
+        return {
+          code: 0,
+          stdout: JSON.stringify([{
+            number: 42,
+            title: missingModelIssueTitle("google", "already-tracked"),
+            body: missingModelIssueBody(
+              { id: "google", name: "Google", modelsDir: "providers/google/models" },
+              "already-tracked",
+            ),
+          }]),
+          stderr: "",
+        };
+      }
+      return { code: 0, stdout: "[]", stderr: "" };
+    }
+    if (args[0] === "issue" && args[1] === "create") {
+      return { code: 0, stdout: "https://github.com/anomalyco/models.dev/issues/99\n", stderr: "" };
+    }
+    return { code: 1, stdout: "", stderr: `unexpected gh args: ${args.join(" ")}` };
+  };
+
+  const notices = await openMissingModelIssues(
+    { id: "google", name: "Google", modelsDir: "providers/google/models" },
+    ["new-model", "already-tracked", "new-model"],
+    { run },
+  );
+
+  expect(notices).toEqual([
+    "Missing model `already-tracked` already tracked by #42",
+    "Opened GitHub issue #99 for missing model `new-model`",
+  ]);
+  expect(calls.some((args) => args[0] === "issue" && args[1] === "create" && args.includes("[missing-model] google: new-model"))).toBe(true);
+  expect(calls.filter((args) => args[0] === "issue" && args[1] === "create")).toHaveLength(1);
+});
+
+test("openIssuesForMissing skips creates and records issue notices", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-missing-issues-"));
+  const modelsDir = path.join(dir, "providers", "demo", "models");
+  await Bun.write(path.join(modelsDir, "existing.toml"), [
+    'name = "Existing"',
+    'description = "Existing demo model"',
+    'release_date = "2026-01-01"',
+    'last_updated = "2026-01-01"',
+    "attachment = false",
+    "reasoning = false",
+    "tool_call = true",
+    "open_weights = false",
+    "",
+    "[cost]",
+    "input = 1",
+    "output = 2",
+    "",
+    "[limit]",
+    "context = 1_000",
+    "output = 100",
+    "",
+    "[modalities]",
+    'input = ["text"]',
+    'output = ["text"]',
+    "",
+  ].join("\n"));
+
+  try {
+    const result = await syncProvider({
+      id: "demo",
+      name: "Demo",
+      modelsDir,
+      openIssuesForMissing: true,
+      sourceID(model: { id: string }) {
+        return model.id;
+      },
+      async fetchModels() {
+        return {
+          models: [
+            { id: "existing" },
+            { id: "brand-new" },
+          ],
+        };
+      },
+      parseModels(raw) {
+        return (raw as { models: Array<{ id: string }> }).models;
+      },
+      translateModel(model, context) {
+        const existing = context.existing(model.id);
+        if (existing === undefined) return undefined;
+        return {
+          id: model.id,
+          model: {
+            name: existing.name ?? model.id,
+            description: existing.description ?? existing.name ?? model.id,
+            release_date: existing.release_date ?? "2026-01-01",
+            last_updated: existing.last_updated ?? "2026-01-01",
+            attachment: existing.attachment ?? false,
+            reasoning: existing.reasoning ?? false,
+            tool_call: existing.tool_call ?? true,
+            open_weights: existing.open_weights ?? false,
+            cost: existing.cost ?? { input: 1, output: 2 },
+            limit: existing.limit ?? { context: 1_000, output: 100 },
+            modalities: existing.modalities ?? { input: ["text"], output: ["text"] },
+          },
+        };
+      },
+    }, {
+      dryRun: true,
+      openIssues: true,
+    });
+
+    expect(result.created).toBe(0);
+    expect(await Bun.file(path.join(modelsDir, "brand-new.toml")).exists()).toBe(false);
+    expect(result.notices.some((notice) => notice.includes("brand-new"))).toBe(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

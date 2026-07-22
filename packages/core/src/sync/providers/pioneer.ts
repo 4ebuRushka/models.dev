@@ -92,6 +92,7 @@ export const pioneer = {
   name: "Pioneer",
   modelsDir: "providers/pioneer/models",
   skipCreates: true,
+  openIssuesForMissing: true,
   deleteMissing: false,
   async fetchModels() {
     const response = await fetch(API_ENDPOINT);
