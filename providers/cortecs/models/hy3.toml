@@ -1,0 +1,15 @@
+base_model = "tencent/hy3"
+# Cortecs Chat maps OpenAI `reasoning_effort`; Hy3 accepts none/low/high
+# (HF: no_think/low/high via chat_template_kwargs.reasoning_effort).
+# https://api.cortecs.ai/v1/models (accessed 2026-07-22)
+# https://huggingface.co/tencent/Hy3
+structured_output = true
+reasoning_options = [{ type = "effort", values = ["none", "low", "high"] }]
+
+[cost]
+input = 0.359
+output = 0.898
+cache_read = 0.090
+
+[limit]
+context = 262_144
