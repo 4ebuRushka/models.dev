@@ -1,13 +1,17 @@
+# Sources (accessed 2026-07-22):
+# - https://ai-gateway.vercel.sh/v1/models (poolside/laguna-s-2.1) — tags reasoning; supported_parameters include reasoning
+# - https://ai-gateway.vercel.sh/v1/models/poolside/laguna-s-2.1/endpoints — routes to poolside
+# - https://huggingface.co/poolside/Laguna-S-2.1 — per-request thinking via enable_thinking
+# - https://docs.poolside.ai/get-started/supported-models — thinking on or off per request
+# API: {"chat_template_kwargs": {"enable_thinking": false}}
+base_model = "poolside/laguna-s-2.1"
 name = "Laguna S 2.1"
-description = "Reasoning model for deliberate analysis, multi-step problem solving, and tool use"
 family = "laguna-s"
 release_date = "2026-07-20"
 last_updated = "2026-07-20"
-attachment = false
-reasoning = true
-tool_call = true
-open_weights = false
-reasoning_options = []
+
+[[reasoning_options]]
+type = "toggle" # API: {"chat_template_kwargs": {"enable_thinking": false}}
 
 [cost]
 input = 0.1
@@ -17,7 +21,3 @@ cache_read = 0.01
 [limit]
 context = 1_000_000
 output = 131_072
-
-[modalities]
-input = ["text"]
-output = ["text"]
