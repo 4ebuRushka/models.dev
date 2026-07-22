@@ -192,6 +192,8 @@ export interface ModelProviderConfig {
   api?: string
   /** API shape when the npm package supports multiple. */
   shape?: "responses" | "completions"
+  /** Variant selected when a request does not choose one explicitly. */
+  variant?: string
   /** Extra request body fields required by this model. */
   body?: Record<string, JsonValue>
   /** Extra request headers required by this model. */
@@ -214,6 +216,8 @@ export interface Model {
   reasoning: boolean
   /** Present exactly when `reasoning` is true. */
   reasoning_options?: ReasoningOption[]
+  /** Provider-authored request body variants keyed by variant ID. */
+  variants?: Record<string, Record<string, JsonValue>>
   /** Supports tool/function calling. */
   tool_call: boolean
   /** Supports interleaved thinking between tool calls. */
