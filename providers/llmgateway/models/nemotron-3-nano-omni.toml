@@ -1,5 +1,6 @@
-# Gateway-wide $.reasoning_effort = "none" disables non-OpenAI reasoning;
-# this model has no documented effort tiers or exact reasoning-token budget.
+# Gateway-wide $.reasoning_effort = "none" (or $.reasoning.effort = "none")
+# disables non-OpenAI reasoning; this model has no documented effort tiers
+# or exact reasoning-token budget.
 # https://docs.llmgateway.io/features/reasoning (accessed 2026-07-23)
 name = "Nemotron 3 Nano Omni"
 description = "Omni-modal model for text, vision, audio, and multimodal agent tasks"
@@ -12,7 +13,9 @@ temperature = true
 tool_call = true
 structured_output = false
 open_weights = false
-reasoning_options = [{ type = "toggle" }]
+
+[[reasoning_options]]
+type = "toggle" # API: {"reasoning_effort": "none"} or {"reasoning": {"effort": "none"}}
 
 [cost]
 input = 0.06
