@@ -1,24 +1,15 @@
-# Reasoning HTTP format (accessed 2026-07-20):
-# The OpenAI plan base .../compatible-mode/v1 uses POST /chat/completions.
-# Hybrid-thinking models use top-level `enable_thinking` and `thinking_budget`.
-# qwen3.8-max-preview is always thinking and instead accepts either the canonical
-# `reasoning_effort` values low, medium, and xhigh or `thinking_budget` from 0 to
-# 262144. The two controls are mutually exclusive; zero maps to low effort and
-# does not disable thinking.
-# POST /responses uses `reasoning.effort`: none, minimal, low, medium, or high;
-# `thinking_budget` is not accepted there. Anthropic plan base .../apps/anthropic
-# uses POST /v1/messages with `thinking.type`: enabled or disabled, integer
-# `thinking.budget_tokens`, and DeepSeek V4-only `reasoning_effort`: high or max.
+# Anthropic Messages format (accessed 2026-07-23):
+# The official OpenCode guide uses @ai-sdk/anthropic with the Token Plan
+# .../apps/anthropic/v1 base URL. Extended thinking uses `thinking.type` and
+# `thinking.budget_tokens`; responses return Anthropic `thinking` content blocks.
 # Sources:
-# https://docs.qwencloud.com/api-reference/chat/openai-chat
-# https://docs.qwencloud.com/developer-guides/text-generation/thinking
+# https://docs.qwencloud.com/developer-guides/clients-and-developer-tools/opencode
+# https://docs.qwencloud.com/api-reference/chat/anthropic
 # https://www.alibabacloud.com/help/en/model-studio/token-plan-quickstart
-# https://www.alibabacloud.com/help/en/model-studio/deep-thinking
-# https://www.alibabacloud.com/help/en/model-studio/compatibility-with-openai-responses-api
 # https://www.alibabacloud.com/help/en/model-studio/anthropic-api-messages
 
 name = "Alibaba Token Plan"
 env = ["ALIBABA_TOKEN_PLAN_API_KEY"]
-npm = "@ai-sdk/openai-compatible"
+npm = "@ai-sdk/anthropic"
 doc = "https://www.alibabacloud.com/help/en/model-studio/token-plan-overview"
-api = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+api = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1"
