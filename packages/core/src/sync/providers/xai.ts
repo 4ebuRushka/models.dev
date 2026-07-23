@@ -72,7 +72,10 @@ export const xai = {
     for (const model of models) {
       if (!seen.has(model.id)) {
         seen.add(model.id);
-        expanded.push(model);
+        // Strip any API-provided canonical_id: sourceID relies on it being set
+        // exclusively by the synthetic alias expansion below, so an API row
+        // carrying it must not be mistaken for an alias and silently skipped.
+        expanded.push({ ...model, canonical_id: undefined });
       }
     }
 

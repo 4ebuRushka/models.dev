@@ -391,6 +391,10 @@ export async function syncProvider<SourceModel>(
       const notice = `Failed to open missing-model GitHub issues: ${message}`;
       notices.push(notice);
       console.error(notice);
+      // Surface as a workflow annotation: on no-change hours the notice never
+      // reaches a PR body, so a broken token or full dedupe window would
+      // otherwise disable issue opens silently while runs stay green.
+      if (process.env.GITHUB_ACTIONS === "true") console.log(`::error::${provider.id}: ${notice}`);
     }
   }
 
