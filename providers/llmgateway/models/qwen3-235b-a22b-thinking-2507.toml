@@ -5,15 +5,15 @@ release_date = "2025-07-08"
 last_updated = "2025-07-08"
 attachment = false
 reasoning = true
-reasoning_options = []
 temperature = true
 tool_call = true
 structured_output = true
 open_weights = true
+reasoning_options = []
 
 [cost]
-input = 0.2
-output = 0.6
+input = 0.3
+output = 3
 
 [limit]
 context = 262_000

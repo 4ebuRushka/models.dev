@@ -7,4 +7,4 @@ output = 0.3
 reasoning = 8.4
 
 [limit]
-context = 32_768
+context = 40_960

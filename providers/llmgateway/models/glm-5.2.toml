@@ -14,4 +14,4 @@ cache_read = 0.234
 cache_write = 0
 
 [limit]
-context = 1_024_000
+context = 1_048_576
