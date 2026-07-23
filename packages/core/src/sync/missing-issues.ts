@@ -49,8 +49,10 @@ export async function openMissingModelIssues(
     return notices;
   }
 
+  // Fail closed before listing/creating: a label failure here would otherwise
+  // surface as one opaque `gh issue create` error per model.
   for (const label of labels) {
-    await runGh([
+    const result = await runGh([
       "label",
       "create",
       label,
@@ -60,6 +62,9 @@ export async function openMissingModelIssues(
       "Automated model catalog sync",
       "--force",
     ]);
+    if (result.code !== 0) {
+      throw new Error(`gh label create ${label} failed: ${result.stderr || result.stdout || `exit ${result.code}`}`);
+    }
   }
 
   const existingByTitle = await listTrackedTitles(provider.id);
@@ -91,6 +96,8 @@ export async function openMissingModelIssues(
   return notices;
 }
 
+const LIST_LIMIT = 1000;
+
 async function listTrackedTitles(providerId: string) {
   // Include closed so a wontfix/closed issue does not reopen hourly.
   const result = await runGh([
@@ -103,7 +110,7 @@ async function listTrackedTitles(providerId: string) {
     "--label",
     `provider:${providerId}`,
     "--limit",
-    "500",
+    String(LIST_LIMIT),
     "--json",
     "number,title",
   ]);
@@ -112,6 +119,13 @@ async function listTrackedTitles(providerId: string) {
   }
 
   const issues = JSON.parse(result.stdout || "[]") as Array<{ number: number; title: string }>;
+  // Fail closed when the window is full: older titles may have been truncated,
+  // and creating against an incomplete list could reopen duplicates.
+  if (issues.length >= LIST_LIMIT) {
+    throw new Error(
+      `gh issue list returned ${issues.length} issues (window limit ${LIST_LIMIT}); refusing to create against a possibly truncated dedupe list`,
+    );
+  }
   return new Map(issues.map((issue) => [issue.title, issue.number]));
 }
 
