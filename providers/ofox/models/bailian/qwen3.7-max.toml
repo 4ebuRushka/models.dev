@@ -1,6 +1,5 @@
 base_model = "alibaba/qwen3.7-max"
-
-reasoning_options = []
+reasoning_options = [{ type = "toggle" }, { type = "budget_tokens" }]
 
 [cost]
 input = 2.5
