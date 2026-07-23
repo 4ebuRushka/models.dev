@@ -6,9 +6,6 @@ base_model = "minimax/MiniMax-M2.5"
 # https://help.aliyun.com/zh/model-studio/deep-thinking
 reasoning_options = []
 
-[interleaved]
-field = "reasoning_content"
-
 [cost]
 input = 0
 output = 0
