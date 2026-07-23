@@ -72,7 +72,11 @@ export interface SyncProvider<SourceModel> {
   preserveBaseModels?: boolean;
   sameModel?(current: ExistingModel, desired: SyncedModel): boolean;
   missingNotice?(paths: string[]): string[];
-  sourceID?(model: SourceModel): string;
+  /**
+   * Remote ID to report when translateModel skips a source model. Return
+   * undefined to skip silently (no notice, no missing-model issue).
+   */
+  sourceID?(model: SourceModel): string | undefined;
   skippedNotice?(ids: string[]): string[];
   fetchModels(): Promise<unknown>;
   parseModels(raw: unknown): SourceModel[];
@@ -185,7 +189,8 @@ export async function syncProvider<SourceModel>(
       },
     });
     if (translated === undefined) {
-      if (provider.sourceID !== undefined) skippedRemote.push(provider.sourceID(sourceModel));
+      const skippedID = provider.sourceID?.(sourceModel);
+      if (skippedID !== undefined) skippedRemote.push(skippedID);
       continue;
     }
 

@@ -183,7 +183,7 @@ xAI is implemented in `packages/core/src/sync/providers/xai.ts`.
 - Required auth: `XAI_API_KEY`.
 - The richer typed endpoints provide model IDs, creation timestamps, modalities, pricing for language models, and prompt/input limits where available.
 - Existing xAI models are updated from API-authoritative fields while local metadata is preserved for fields the API does not expose, especially output token limits and some feature/capability flags.
-- New xAI API models are not created automatically (`skipCreates`); each missing ID opens a deduped GitHub issue.
+- New xAI API models are not created automatically (`skipCreates`); each missing ID opens a deduped GitHub issue. Alias IDs of models already cataloged under their canonical ID are skipped silently and never reported as missing.
 
 ## OpenAI Notes
 
