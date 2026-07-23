@@ -1395,6 +1395,8 @@ test("missing-model issue markers round-trip provider and model ids with slashes
     providerId: "google-vertex",
     modelId: "deepseek-ai/deepseek-v3.2-maas",
   });
+  expect(parseMissingModelIssueMarker("no marker here")).toBeUndefined();
+  expect(parseMissingModelIssueMarker("<!-- models.dev/sync-missing provider='x' model='y' -->")).toBeUndefined();
   expect(missingModelIssueTitle("google", "gemini-3.6-flash")).toBe(
     "[missing-model] google: gemini-3.6-flash",
   );
@@ -1412,22 +1414,25 @@ test("openMissingModelIssues dedupes open issues and creates missing ones", asyn
     calls.push(args);
     if (args[0] === "label") return { code: 0, stdout: "", stderr: "" };
     if (args[0] === "issue" && args[1] === "list") {
-      const search = args[args.indexOf("--search") + 1] ?? "";
-      if (search.includes("already-tracked")) {
-        return {
-          code: 0,
-          stdout: JSON.stringify([{
+      return {
+        code: 0,
+        stdout: JSON.stringify([
+          {
             number: 42,
             title: missingModelIssueTitle("google", "already-tracked"),
             body: missingModelIssueBody(
               { id: "google", name: "Google", modelsDir: "providers/google/models" },
               "already-tracked",
             ),
-          }]),
-          stderr: "",
-        };
-      }
-      return { code: 0, stdout: "[]", stderr: "" };
+          },
+          {
+            number: 7,
+            title: "[missing-model] google: unrelated",
+            body: "no marker",
+          },
+        ]),
+        stderr: "",
+      };
     }
     if (args[0] === "issue" && args[1] === "create") {
       return { code: 0, stdout: "https://github.com/anomalyco/models.dev/issues/99\n", stderr: "" };
@@ -1449,12 +1454,31 @@ test("openMissingModelIssues dedupes open issues and creates missing ones", asyn
   expect(calls.filter((args) => args[0] === "issue" && args[1] === "create")).toHaveLength(1);
 });
 
-test("skipCreates skips creates and records issue notices", async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), "sync-missing-issues-"));
-  const modelsDir = path.join(dir, "providers", "demo", "models");
-  await Bun.write(path.join(modelsDir, "existing.toml"), [
-    'name = "Existing"',
-    'description = "Existing demo model"',
+test("openMissingModelIssues fails closed when listing issues fails", async () => {
+  const calls: string[][] = [];
+  const run = async (args: string[]) => {
+    calls.push(args);
+    if (args[0] === "label") return { code: 0, stdout: "", stderr: "" };
+    if (args[0] === "issue" && args[1] === "list") {
+      return { code: 1, stdout: "", stderr: "API rate limit exceeded" };
+    }
+    return { code: 0, stdout: "https://github.com/anomalyco/models.dev/issues/1\n", stderr: "" };
+  };
+
+  await expect(
+    openMissingModelIssues(
+      { id: "google", name: "Google", modelsDir: "providers/google/models" },
+      ["new-model"],
+      { run },
+    ),
+  ).rejects.toThrow("gh issue list failed");
+  expect(calls.filter((args) => args[0] === "issue" && args[1] === "create")).toHaveLength(0);
+});
+
+function demoModelToml(name: string) {
+  return [
+    `name = "${name}"`,
+    `description = "${name} demo model"`,
     'release_date = "2026-01-01"',
     'last_updated = "2026-01-01"',
     "attachment = false",
@@ -1474,7 +1498,13 @@ test("skipCreates skips creates and records issue notices", async () => {
     'input = ["text"]',
     'output = ["text"]',
     "",
-  ].join("\n"));
+  ].join("\n");
+}
+
+test("skipCreates via sourceID path records issue notices", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-missing-issues-"));
+  const modelsDir = path.join(dir, "providers", "demo", "models");
+  await Bun.write(path.join(modelsDir, "existing.toml"), demoModelToml("Existing"));
 
   try {
     const result = await syncProvider({
@@ -1524,6 +1554,114 @@ test("skipCreates skips creates and records issue notices", async () => {
     expect(result.created).toBe(0);
     expect(await Bun.file(path.join(modelsDir, "brand-new.toml")).exists()).toBe(false);
     expect(result.notices.some((notice) => notice.includes("brand-new"))).toBe(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("skipCreates branch skips translated creates and records issue notices", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-skip-creates-branch-"));
+  const modelsDir = path.join(dir, "providers", "demo", "models");
+  await Bun.write(path.join(modelsDir, "existing.toml"), demoModelToml("Existing"));
+
+  try {
+    const result = await syncProvider({
+      id: "demo",
+      name: "Demo",
+      modelsDir,
+      skipCreates: true,
+      async fetchModels() {
+        return {
+          models: [
+            { id: "existing" },
+            { id: "brand-new" },
+          ],
+        };
+      },
+      parseModels(raw) {
+        return (raw as { models: Array<{ id: string }> }).models;
+      },
+      translateModel(model, context) {
+        const existing = context.existing(model.id);
+        return {
+          id: model.id,
+          model: {
+            name: existing?.name ?? model.id,
+            description: existing?.description ?? model.id,
+            release_date: existing?.release_date ?? "2026-01-01",
+            last_updated: existing?.last_updated ?? "2026-01-01",
+            attachment: existing?.attachment ?? false,
+            reasoning: existing?.reasoning ?? false,
+            tool_call: existing?.tool_call ?? true,
+            open_weights: existing?.open_weights ?? false,
+            cost: existing?.cost ?? { input: 1, output: 2 },
+            limit: existing?.limit ?? { context: 1_000, output: 100 },
+            modalities: existing?.modalities ?? { input: ["text"], output: ["text"] },
+          },
+        };
+      },
+    }, {
+      dryRun: true,
+      openIssues: true,
+    });
+
+    expect(result.created).toBe(0);
+    expect(await Bun.file(path.join(modelsDir, "brand-new.toml")).exists()).toBe(false);
+    expect(result.notices.some((notice) => notice.includes("brand-new"))).toBe(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("openIssues false does not invoke gh for skipCreates providers", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "sync-no-issues-"));
+  const modelsDir = path.join(dir, "providers", "demo", "models");
+  await Bun.write(path.join(modelsDir, "existing.toml"), demoModelToml("Existing"));
+  const calls: string[][] = [];
+
+  try {
+    const result = await syncProvider({
+      id: "demo",
+      name: "Demo",
+      modelsDir,
+      skipCreates: true,
+      sourceID(model: { id: string }) {
+        return model.id;
+      },
+      async fetchModels() {
+        return { models: [{ id: "existing" }, { id: "brand-new" }] };
+      },
+      parseModels(raw) {
+        return (raw as { models: Array<{ id: string }> }).models;
+      },
+      translateModel(model, context) {
+        const existing = context.existing(model.id);
+        if (existing === undefined) return undefined;
+        return {
+          id: model.id,
+          model: {
+            name: existing.name ?? model.id,
+            description: existing.description ?? model.id,
+            release_date: existing.release_date ?? "2026-01-01",
+            last_updated: existing.last_updated ?? "2026-01-01",
+            attachment: existing.attachment ?? false,
+            reasoning: existing.reasoning ?? false,
+            tool_call: existing.tool_call ?? true,
+            open_weights: existing.open_weights ?? false,
+            cost: existing.cost ?? { input: 1, output: 2 },
+            limit: existing.limit ?? { context: 1_000, output: 100 },
+            modalities: existing.modalities ?? { input: ["text"], output: ["text"] },
+          },
+        };
+      },
+    }, {
+      dryRun: true,
+      openIssues: false,
+    });
+
+    expect(result.created).toBe(0);
+    expect(calls).toHaveLength(0);
+    expect(result.notices.every((notice) => !notice.includes("GitHub issue"))).toBe(true);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

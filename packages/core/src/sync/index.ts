@@ -960,10 +960,13 @@ export async function main(args = process.argv.slice(2)) {
   }
 
   const target = args.find((arg) => !arg.startsWith("-")) ?? "aggregators";
+  const inActions = process.env.GITHUB_ACTIONS === "true" || process.env.CI === "true";
   const results = await syncTargets(target, {
     dryRun: args.includes("--dry-run"),
     newOnly: args.includes("--new-only"),
-    openIssues: !args.includes("--no-issues"),
+    // Local runs stay notice-only unless explicitly enabled; CI opens issues by default.
+    openIssues: args.includes("--open-issues")
+      || (inActions && !args.includes("--no-issues")),
   });
 
   await writeReport(target, results);

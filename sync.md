@@ -20,7 +20,8 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync openai` syncs only OpenAI catalog availability.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
-- `bun models:sync <provider> --no-issues` skips opening GitHub issues for missing models.
+- `bun models:sync <provider> --open-issues` opens GitHub issues for missing models (on by default in CI/`GITHUB_ACTIONS`).
+- `bun models:sync <provider> --no-issues` skips opening GitHub issues even in CI.
 - `bun validate` validates the generated catalog after a sync.
 
 Sync runs also write `.sync/model-sync-report.md` for the automation workflow PR body. Do not commit that report from local runs.
@@ -55,10 +56,11 @@ For each skipped remote model ID the runner:
 
 1. Builds a stable title: `[missing-model] <provider>: <model-id>`
 2. Embeds a stable body marker: `<!-- models.dev/sync-missing provider="..." model="..." -->`
-3. Searches open issues for that marker/title
+3. Lists open issues labeled `missing-model` + `provider:<id>` and matches title/marker in memory
 4. Creates a labeled issue only when none exists (`automation`, `model-sync`, `missing-model`, `provider:<id>`)
+5. If listing open issues fails, does **not** create (fail closed to avoid duplicates)
 
-Requires authenticated `gh` (`GH_TOKEN` in Actions, or local `gh auth`). Use `--no-issues` or `--dry-run` to skip creates. The issue-fixer workflow can then open an add-model PR from the issue.
+Requires authenticated `gh` (`GH_TOKEN` on the sync workflow step, or local `gh auth` with `--open-issues`). Local runs stay notice-only unless `--open-issues` is passed. Use `--no-issues` or `--dry-run` to skip creates in CI. The issue-fixer workflow can then open an add-model PR from the issue.
 
 ## Provider Modules
 
