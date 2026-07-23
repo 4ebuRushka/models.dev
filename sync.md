@@ -20,8 +20,8 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync openai` syncs only OpenAI catalog availability.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
-- `bun models:sync <provider> --open-issues` opens GitHub issues for missing models (on by default in CI/`GITHUB_ACTIONS`).
-- `bun models:sync <provider> --no-issues` skips opening GitHub issues even in CI.
+- `bun models:sync <provider> --open-issues` opens GitHub issues for missing models (on by default only when `GITHUB_ACTIONS=true`).
+- `bun models:sync <provider> --no-issues` skips opening GitHub issues in Actions.
 - `bun validate` validates the generated catalog after a sync.
 
 Sync runs also write `.sync/model-sync-report.md` for the automation workflow PR body. Do not commit that report from local runs.
@@ -40,27 +40,20 @@ Sync runs also write `.sync/model-sync-report.md` for the automation workflow PR
 - Replaces symlinked files safely by removing the symlink before writing.
 - Removes existing files that are no longer present in the desired synced set.
 - Writes `.sync/model-sync-report.md` for GitHub Actions.
-- When `skipCreates` is set, opens one deduped GitHub issue per remote model missing from the local catalog (via `gh`).
+- When `skipCreates` is set and issue opens are enabled, opens one deduped GitHub issue per remote model missing from the local catalog (via `gh`).
 
 Because the runner removes files missing from the desired set, a provider module should only skip source models when deleting existing local files for those skipped IDs is intentional.
 
 ## Missing-model GitHub issues
 
-Providers that cannot safely auto-create TOMLs should set:
+Providers that cannot safely auto-create TOMLs set `skipCreates: true`. In GitHub Actions (or with `--open-issues`), each skipped remote ID may open a GitHub issue:
 
-```ts
-skipCreates: true,
-```
+1. Title: `[missing-model] <provider>: <model-id>` (stable for dedupe)
+2. Labels: `automation`, `model-sync`, `missing-model`, `provider:<id>`
+3. Lists existing issues (open **and** closed) with those labels; skips create when the title already exists
+4. If listing fails, creates nothing (fail closed)
 
-For each skipped remote model ID the runner:
-
-1. Builds a stable title: `[missing-model] <provider>: <model-id>`
-2. Embeds a stable body marker: `<!-- models.dev/sync-missing provider="..." model="..." -->`
-3. Lists open issues labeled `missing-model` + `provider:<id>` and matches title/marker in memory
-4. Creates a labeled issue only when none exists (`automation`, `model-sync`, `missing-model`, `provider:<id>`)
-5. If listing open issues fails, does **not** create (fail closed to avoid duplicates)
-
-Requires authenticated `gh` (`GH_TOKEN` on the sync workflow step, or local `gh auth` with `--open-issues`). Local runs stay notice-only unless `--open-issues` is passed. Use `--no-issues` or `--dry-run` to skip creates in CI. The issue-fixer workflow can then open an add-model PR from the issue.
+Requires `GH_TOKEN` on the sync workflow step. Local runs are notice-only unless `--open-issues`. Use `--no-issues` / `--dry-run` to skip creates. Issue-fixer ignores these titles (`[missing-model]…`) — they need hand-authored metadata.
 
 ## Provider Modules
 

@@ -371,7 +371,7 @@ export async function syncProvider<SourceModel>(
   if (
     provider.skipCreates === true
     && skippedRemote.length > 0
-    && options.openIssues !== false
+    && options.openIssues === true
   ) {
     try {
       notices.push(
@@ -960,13 +960,12 @@ export async function main(args = process.argv.slice(2)) {
   }
 
   const target = args.find((arg) => !arg.startsWith("-")) ?? "aggregators";
-  const inActions = process.env.GITHUB_ACTIONS === "true" || process.env.CI === "true";
   const results = await syncTargets(target, {
     dryRun: args.includes("--dry-run"),
     newOnly: args.includes("--new-only"),
-    // Local runs stay notice-only unless explicitly enabled; CI opens issues by default.
+    // Only GitHub Actions opens issues by default; local needs --open-issues.
     openIssues: args.includes("--open-issues")
-      || (inActions && !args.includes("--no-issues")),
+      || (process.env.GITHUB_ACTIONS === "true" && !args.includes("--no-issues")),
   });
 
   await writeReport(target, results);

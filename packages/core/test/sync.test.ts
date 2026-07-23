@@ -239,7 +239,7 @@ test("OpenAI availability sync retains models absent from a scoped response", as
           data: [{ id: "gpt-scoped", object: "model", created: 1, owned_by: "system" }],
         };
       },
-    }, { openIssues: false });
+    });
     expect(result.deleted).toBe(0);
     expect(result.unchanged).toBe(1);
     expect(await Bun.file(path.join(modelsDir, "gpt-existing.toml")).exists()).toBe(true);

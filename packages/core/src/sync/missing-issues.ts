@@ -6,82 +6,43 @@ export interface MissingModelIssueTarget {
 
 export interface OpenMissingModelIssuesOptions {
   dryRun?: boolean;
-  run?: typeof runGh;
 }
 
-type GhRunner = typeof runGh;
-
-interface ListedIssue {
-  number: number;
-  title: string;
-  body?: string;
-}
-
-export function missingModelIssueMarker(providerId: string, modelId: string) {
-  return `<!-- models.dev/sync-missing provider=${JSON.stringify(providerId)} model=${JSON.stringify(modelId)} -->`;
-}
-
-export function missingModelIssueTitle(providerId: string, modelId: string) {
+function issueTitle(providerId: string, modelId: string) {
   return `[missing-model] ${providerId}: ${modelId}`;
 }
 
-export function missingModelIssueBody(provider: MissingModelIssueTarget, modelId: string) {
-  const expectedPath = `${provider.modelsDir}/${modelId}.toml`;
+function issueBody(provider: MissingModelIssueTarget, modelId: string) {
   return [
-    missingModelIssueMarker(provider.id, modelId),
+    `The **${provider.name}** catalog sync found remote model \`${modelId}\` that is not in the local catalog.`,
     "",
-    "## Missing model",
-    "",
-    `The **${provider.name}** catalog sync found a remote model that is not in the local catalog.`,
-    "",
-    "| Field | Value |",
-    "| --- | --- |",
+    `| Field | Value |`,
+    `| --- | --- |`,
     `| Provider | \`${provider.id}\` |`,
     `| Model ID | \`${modelId}\` |`,
-    `| Expected path | \`${expectedPath}\` |`,
+    `| Expected path | \`${provider.modelsDir}/${modelId}.toml\` |`,
     "",
-    "This provider does not auto-create new model TOMLs because the remote source is not authoritative enough for a full catalog entry.",
-    "Please add the model (use `base_model` when matching `models/` metadata exists).",
-    "",
-    "### Automation",
-    "",
-    "- Marker above is stable for dedupe across sync runs.",
-    "- Issue fixer should treat this as an actionable catalog add.",
+    "This provider uses `skipCreates` because the remote source is not enough to auto-author a full TOML.",
+    "Add the model manually (prefer `base_model` when matching `models/` metadata exists).",
     "",
   ].join("\n");
 }
 
-export function parseMissingModelIssueMarker(text: string) {
-  const match = text.match(
-    /<!--\s*models\.dev\/sync-missing\s+provider=("(?:\\.|[^"\\])*")\s+model=("(?:\\.|[^"\\])*")\s*-->/,
-  );
-  if (!match) return undefined;
-  try {
-    return {
-      providerId: JSON.parse(match[1]!) as string,
-      modelId: JSON.parse(match[2]!) as string,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
+/** Open one deduped GitHub issue per missing model ID (title-stable). */
 export async function openMissingModelIssues(
   provider: MissingModelIssueTarget,
   modelIds: string[],
   options: OpenMissingModelIssuesOptions = {},
 ): Promise<string[]> {
-  const uniqueIds = [...new Set(modelIds)].filter((id) => id.length > 0).sort();
-  if (uniqueIds.length === 0) return [];
+  const ids = [...new Set(modelIds)].filter((id) => id.length > 0).sort();
+  if (ids.length === 0) return [];
 
-  const run = options.run ?? runGh;
   const notices: string[] = [];
   const labels = ["automation", "model-sync", "missing-model", `provider:${provider.id}`];
 
   if (options.dryRun) {
-    for (const modelId of uniqueIds) {
-      const title = missingModelIssueTitle(provider.id, modelId);
-      const notice = `Would open GitHub issue for missing model \`${modelId}\` (\`${title}\`)`;
+    for (const modelId of ids) {
+      const notice = `Would open GitHub issue for missing model \`${modelId}\` (\`${issueTitle(provider.id, modelId)}\`)`;
       notices.push(notice);
       console.log(notice);
     }
@@ -89,31 +50,36 @@ export async function openMissingModelIssues(
   }
 
   for (const label of labels) {
-    await ensureLabel(run, label);
+    await runGh([
+      "label",
+      "create",
+      label,
+      "--color",
+      "0E8A16",
+      "--description",
+      "Automated model catalog sync",
+      "--force",
+    ]);
   }
 
-  const openIssues = await listOpenMissingModelIssues(run, provider.id);
+  const existingByTitle = await listTrackedTitles(provider.id);
 
-  for (const modelId of uniqueIds) {
-    try {
-      const title = missingModelIssueTitle(provider.id, modelId);
-      const marker = missingModelIssueMarker(provider.id, modelId);
-      const existing = findListedMissingModelIssue(openIssues, provider.id, modelId, title);
-
-      if (existing !== undefined) {
-        const notice = `Missing model \`${modelId}\` already tracked by #${existing}`;
-        notices.push(notice);
-        console.log(notice);
-        continue;
-      }
-
-      const body = missingModelIssueBody(provider, modelId);
-      const created = await createIssue(run, title, body, labels);
-      openIssues.push({ number: created, title, body });
-      const notice = `Opened GitHub issue #${created} for missing model \`${modelId}\``;
+  for (const modelId of ids) {
+    const title = issueTitle(provider.id, modelId);
+    const existing = existingByTitle.get(title);
+    if (existing !== undefined) {
+      const notice = `Missing model \`${modelId}\` already tracked by #${existing}`;
       notices.push(notice);
       console.log(notice);
-      console.log(`  marker: ${marker}`);
+      continue;
+    }
+
+    try {
+      const number = await createIssue(title, issueBody(provider, modelId), labels);
+      existingByTitle.set(title, number);
+      const notice = `Opened GitHub issue #${number} for missing model \`${modelId}\``;
+      notices.push(notice);
+      console.log(notice);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const notice = `Failed to open GitHub issue for missing model \`${modelId}\`: ${message}`;
@@ -125,26 +91,13 @@ export async function openMissingModelIssues(
   return notices;
 }
 
-export function findListedMissingModelIssue(
-  issues: ListedIssue[],
-  providerId: string,
-  modelId: string,
-  title: string,
-) {
-  const match = issues.find((issue) => {
-    if (issue.title === title) return true;
-    const parsed = parseMissingModelIssueMarker(issue.body ?? "");
-    return parsed?.providerId === providerId && parsed.modelId === modelId;
-  });
-  return match?.number;
-}
-
-async function listOpenMissingModelIssues(run: GhRunner, providerId: string) {
-  const result = await run([
+async function listTrackedTitles(providerId: string) {
+  // Include closed so a wontfix/closed issue does not reopen hourly.
+  const result = await runGh([
     "issue",
     "list",
     "--state",
-    "open",
+    "all",
     "--label",
     "missing-model",
     "--label",
@@ -152,26 +105,20 @@ async function listOpenMissingModelIssues(run: GhRunner, providerId: string) {
     "--limit",
     "500",
     "--json",
-    "number,title,body",
+    "number,title",
   ]);
   if (result.code !== 0) {
-    throw new Error(
-      `gh issue list failed: ${result.stderr || result.stdout || `exit ${result.code}`}`,
-    );
+    throw new Error(`gh issue list failed: ${result.stderr || result.stdout || `exit ${result.code}`}`);
   }
 
-  return JSON.parse(result.stdout || "[]") as ListedIssue[];
+  const issues = JSON.parse(result.stdout || "[]") as Array<{ number: number; title: string }>;
+  return new Map(issues.map((issue) => [issue.title, issue.number]));
 }
 
-async function createIssue(
-  run: GhRunner,
-  title: string,
-  body: string,
-  labels: string[],
-) {
+async function createIssue(title: string, body: string, labels: string[]) {
   const args = ["issue", "create", "--title", title, "--body", body];
   for (const label of labels) args.push("--label", label);
-  const result = await run(args);
+  const result = await runGh(args);
   if (result.code !== 0) {
     throw new Error(`gh issue create failed: ${result.stderr || result.stdout || `exit ${result.code}`}`);
   }
@@ -179,30 +126,12 @@ async function createIssue(
   const url = result.stdout.trim();
   const number = url.match(/\/issues\/(\d+)\s*$/)?.[1] ?? url.match(/#(\d+)\s*$/)?.[1];
   if (number === undefined) {
-    throw new Error(`gh issue create succeeded but returned no issue number: ${url}`);
+    throw new Error(`gh issue create returned no issue number: ${url}`);
   }
   return Number(number);
 }
 
-async function ensureLabel(run: GhRunner, label: string) {
-  const result = await run([
-    "label",
-    "create",
-    label,
-    "--color",
-    "0E8A16",
-    "--description",
-    "Automated model catalog sync",
-    "--force",
-  ]);
-  if (result.code !== 0) {
-    throw new Error(
-      `gh label create failed for ${label}: ${result.stderr || result.stdout || `exit ${result.code}`}`,
-    );
-  }
-}
-
-export async function runGh(args: string[]) {
+async function runGh(args: string[]) {
   const proc = Bun.spawn(["gh", ...args], {
     stdout: "pipe",
     stderr: "pipe",
