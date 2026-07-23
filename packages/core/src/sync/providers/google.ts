@@ -34,7 +34,6 @@ export const google = {
   name: "Google",
   modelsDir: "providers/google/models",
   skipCreates: true,
-  openIssuesForMissing: true,
   sourceID(model) {
     return model.name.replace(/^models\//, "");
   },

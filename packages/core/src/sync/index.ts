@@ -62,13 +62,11 @@ export interface SyncProvider<SourceModel> {
   name: string;
   modelsDir: string;
   metadataNamespace?: string;
-  /** Do not create new local TOMLs for remote-only models. */
-  skipCreates?: boolean;
   /**
-   * When remote models are missing locally, open one GitHub issue per model ID
-   * (deduped). Implies `skipCreates`.
+   * Do not create new local TOMLs for remote-only models. Instead open one
+   * deduped GitHub issue per missing model ID.
    */
-  openIssuesForMissing?: boolean;
+  skipCreates?: boolean;
   deleteMissing?: boolean;
   preserveSymlinks?: boolean;
   preserveBaseModels?: boolean;
@@ -192,8 +190,7 @@ export async function syncProvider<SourceModel>(
     }
 
     const relativePath = `${translated.id}.toml`;
-    const skipCreates = provider.skipCreates === true || provider.openIssuesForMissing === true;
-    if (skipCreates && !existing.has(relativePath)) {
+    if (provider.skipCreates === true && !existing.has(relativePath)) {
       skippedRemote.push(translated.id);
       continue;
     }
@@ -372,7 +369,7 @@ export async function syncProvider<SourceModel>(
   ];
 
   if (
-    provider.openIssuesForMissing === true
+    provider.skipCreates === true
     && skippedRemote.length > 0
     && options.openIssues !== false
   ) {

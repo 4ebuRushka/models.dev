@@ -39,7 +39,7 @@ Sync runs also write `.sync/model-sync-report.md` for the automation workflow PR
 - Replaces symlinked files safely by removing the symlink before writing.
 - Removes existing files that are no longer present in the desired synced set.
 - Writes `.sync/model-sync-report.md` for GitHub Actions.
-- When `openIssuesForMissing` is set, opens one deduped GitHub issue per remote model missing from the local catalog (via `gh`).
+- When `skipCreates` is set, opens one deduped GitHub issue per remote model missing from the local catalog (via `gh`).
 
 Because the runner removes files missing from the desired set, a provider module should only skip source models when deleting existing local files for those skipped IDs is intentional.
 
@@ -49,10 +49,9 @@ Providers that cannot safely auto-create TOMLs should set:
 
 ```ts
 skipCreates: true,
-openIssuesForMissing: true,
 ```
 
-`openIssuesForMissing` implies `skipCreates`. For each skipped remote model ID the runner:
+For each skipped remote model ID the runner:
 
 1. Builds a stable title: `[missing-model] <provider>: <model-id>`
 2. Embeds a stable body marker: `<!-- models.dev/sync-missing provider="..." model="..." -->`
@@ -179,7 +178,7 @@ Google is implemented in `packages/core/src/sync/providers/google.ts`.
 - Model IDs are derived from the `models/{model}` resource names.
 - The API is authoritative for display names, token limits, temperature metadata, and the `thinking` flag when present.
 - Local Google models missing from the API response are removed.
-- New Google API models are not created automatically (`openIssuesForMissing`); each missing ID opens a deduped GitHub issue for the issue fixer / maintainers.
+- New Google API models are not created automatically (`skipCreates`); each missing ID opens a deduped GitHub issue for the issue fixer / maintainers.
 
 ## xAI Notes
 
@@ -189,7 +188,7 @@ xAI is implemented in `packages/core/src/sync/providers/xai.ts`.
 - Required auth: `XAI_API_KEY`.
 - The richer typed endpoints provide model IDs, creation timestamps, modalities, pricing for language models, and prompt/input limits where available.
 - Existing xAI models are updated from API-authoritative fields while local metadata is preserved for fields the API does not expose, especially output token limits and some feature/capability flags.
-- New xAI API models are not created automatically (`openIssuesForMissing`); each missing ID opens a deduped GitHub issue.
+- New xAI API models are not created automatically (`skipCreates`); each missing ID opens a deduped GitHub issue.
 
 ## OpenAI Notes
 
@@ -197,7 +196,7 @@ xAI is implemented in `packages/core/src/sync/providers/xai.ts`.
 - Source endpoint: `https://api.openai.com/v1/models`.
 - Required auth: `OPENAI_API_KEY` from an automation account with access to the full first-party catalog.
 - The endpoint is used only to monitor catalog availability. Existing TOMLs are preserved byte-for-byte, including models absent from the response, because model access can be scoped to the API project.
-- Fine-tuned and customer-owned models are excluded. Unknown first-party models open deduped GitHub issues (`openIssuesForMissing`) without changing the catalog.
+- Fine-tuned and customer-owned models are excluded. Unknown first-party models open deduped GitHub issues (`skipCreates`) without changing the catalog.
 
 ## OVHcloud Notes
 

@@ -1449,7 +1449,7 @@ test("openMissingModelIssues dedupes open issues and creates missing ones", asyn
   expect(calls.filter((args) => args[0] === "issue" && args[1] === "create")).toHaveLength(1);
 });
 
-test("openIssuesForMissing skips creates and records issue notices", async () => {
+test("skipCreates skips creates and records issue notices", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "sync-missing-issues-"));
   const modelsDir = path.join(dir, "providers", "demo", "models");
   await Bun.write(path.join(modelsDir, "existing.toml"), [
@@ -1481,7 +1481,7 @@ test("openIssuesForMissing skips creates and records issue notices", async () =>
       id: "demo",
       name: "Demo",
       modelsDir,
-      openIssuesForMissing: true,
+      skipCreates: true,
       sourceID(model: { id: string }) {
         return model.id;
       },

@@ -56,7 +56,6 @@ export const openai = {
   name: "OpenAI",
   modelsDir: "providers/openai/models",
   skipCreates: true,
-  openIssuesForMissing: true,
   deleteMissing: false,
   sourceID(model) {
     return model.id;

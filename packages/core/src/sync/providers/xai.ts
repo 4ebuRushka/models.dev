@@ -38,7 +38,6 @@ export const xai = {
   name: "xAI",
   modelsDir: "providers/xai/models",
   skipCreates: true,
-  openIssuesForMissing: true,
   sourceID(model) {
     return model.id;
   },
