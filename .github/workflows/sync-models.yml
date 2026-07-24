@@ -12,6 +12,9 @@ permissions:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+env:
+  AUTO_MERGE_PROVIDERS: '["openrouter","venice"]'
+
 jobs:
   providers:
     if: github.repository == 'anomalyco/models.dev'
@@ -85,13 +88,24 @@ jobs:
       - name: Validate models
         run: bun validate
 
+      - name: Setup git committer for auto-merge
+        if: contains(fromJSON(env.AUTO_MERGE_PROVIDERS), matrix.provider)
+        id: committer
+        uses: ./.github/actions/setup-git-committer
+        with:
+          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
+          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+
       - name: Report changes
+        id: report
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ contains(fromJSON(env.AUTO_MERGE_PROVIDERS), matrix.provider) && steps.committer.outputs.token || github.token }}
           BRANCH: automation/sync-models-${{ matrix.provider }}
           LABELS: automation,model-sync,provider:${{ matrix.provider }}
           TITLE: "chore(sync): update ${{ matrix.name }} model catalog"
         run: |
+          set -euo pipefail
+          echo "changed=false" >> "$GITHUB_OUTPUT"
           tee -a "$GITHUB_STEP_SUMMARY" < .sync/model-sync-report.md >/dev/null
 
           label_args=()
@@ -122,4 +136,31 @@ jobs:
             done
           else
             gh pr create --base dev --head "$BRANCH" --title "$TITLE" --body-file .sync/model-sync-report.md "${label_args[@]}"
+            pr_number="$(gh pr list --head "$BRANCH" --base dev --json number --jq '.[0].number')"
           fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for CI and merge
+        if: steps.report.outputs.changed == 'true' && contains(fromJSON(env.AUTO_MERGE_PROVIDERS), matrix.provider)
+        env:
+          GH_TOKEN: ${{ steps.committer.outputs.token }}
+          PR_NUMBER: ${{ steps.report.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+
+          for _ in $(seq 1 120); do
+            if check_count="$(gh pr checks "$PR_NUMBER" --json name --jq 'length' 2>/dev/null)" && [ "$check_count" -gt 0 ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if ! check_count="$(gh pr checks "$PR_NUMBER" --json name --jq 'length' 2>/dev/null)" || [ "$check_count" -eq 0 ]; then
+            echo "No CI checks appeared for PR #$PR_NUMBER within 10 minutes." >&2
+            exit 1
+          fi
+
+          gh pr checks "$PR_NUMBER" --watch --fail-fast --interval 10
+          gh pr merge "$PR_NUMBER" --squash --delete-branch
