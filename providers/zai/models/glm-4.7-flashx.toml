@@ -1,3 +1,6 @@
+# Sources:
+# - https://docs.z.ai/devpack/using5.1 (contextWindow: 204800 for Z.AI 200K GLM models)
+# - https://docs.z.ai/guides/llm/glm-4.7 (documented 200K context)
 name = "GLM-4.7-FlashX"
 description = "Efficient GLM model for fast reasoning, coding, and agent workflows"
 family = "glm-flash"
@@ -20,7 +23,7 @@ cache_read = 0.01
 cache_write = 0
 
 [limit]
-context = 200_000
+context = 204_800
 output = 131_072
 
 [modalities]

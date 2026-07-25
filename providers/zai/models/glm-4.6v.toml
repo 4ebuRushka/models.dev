@@ -1,3 +1,7 @@
+# Sources:
+# - https://docs.z.ai/guides/vlm/glm-4.6v (documented 128K context)
+# - https://docs.z.ai/guides/overview/concept-param (max_tokens binary: 32768)
+# - Sibling glm-4.5 series uses context = 131_072 for documented 128K
 name = "GLM-4.6V"
 description = "GLM vision model for visual reasoning, documents, and multimodal agents"
 family = "glm"
@@ -18,7 +22,7 @@ input = 0.3
 output = 0.9
 
 [limit]
-context = 128000
+context = 131072
 output = 32768
 
 [modalities]

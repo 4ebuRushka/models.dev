@@ -1,3 +1,6 @@
+# Sources:
+# - https://docs.z.ai/devpack/using5.1 (contextWindow: 204800 for glm-5.1)
+# - https://docs.z.ai/guides/overview/concept-param (max_tokens binary: 131072)
 name = "GLM-5.1"
 description = "Strong GLM coding model for agentic engineering, terminals, and repository generation"
 family = "glm"
@@ -23,7 +26,7 @@ cache_read = 0.26
 cache_write = 0
 
 [limit]
-context = 200000
+context = 204800
 output = 131072
 
 [modalities]

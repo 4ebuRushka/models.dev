@@ -1,3 +1,6 @@
+# Sources:
+# - https://docs.z.ai/devpack/using5.1 (contextWindow: 204800 for Z.AI 200K GLM models)
+# - https://docs.z.ai/guides/overview/concept-param (max_tokens binary: 131072 for glm-5-turbo)
 name = "GLM-5-Turbo"
 description = "Faster GLM-5 lane for coding agents that need lower latency"
 family = "glm"
@@ -23,7 +26,7 @@ cache_read = 0.24
 cache_write = 0
 
 [limit]
-context = 200000
+context = 204800
 output = 131072
 
 [modalities]
