@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
-import { AuthoredModel } from "../src/index.js";
+import { AuthoredModel, Provider } from "../src/index.js";
 
 type AuthoredModelData = z.infer<typeof AuthoredModel>;
 
@@ -28,6 +28,22 @@ describe("model schema", () => {
     });
 
     expect(AuthoredModel.safeParse(model).success).toBe(false);
+  });
+});
+
+describe("provider schema", () => {
+  test("accepts OAuth-only providers without environment credentials", () => {
+    expect(
+      Provider.safeParse({
+        id: "openai-codex",
+        name: "OpenAI Codex",
+        env: [],
+        npm: "@ai-sdk/openai",
+        api: "https://chatgpt.com/backend-api/codex",
+        doc: "https://github.com/openai/codex",
+        models: {},
+      }).success,
+    ).toBe(true);
   });
 });
 
