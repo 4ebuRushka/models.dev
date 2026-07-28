@@ -1,4 +1,4 @@
-base_model = "anthropic/claude-fable-5"
+base_model = "anthropic/claude-sonnet-4-6"
 interleaved = { field = "reasoning_content" }
 
 [[reasoning_options]]
@@ -6,10 +6,14 @@ type = "effort"
 values = ["low", "medium", "high", "xhigh", "max"]
 
 [cost]
-input = 3.00
-output = 18.50
-reasoning = 18.50
-cache_read = 0.30
+input = 0.90
+output = 5.55
+reasoning = 5.55
+cache_read = 0.09
+
+[limit]
+context = 200_000
+output = 128_000
 
 [modalities]
 input = ["text", "image"]
