@@ -35,6 +35,24 @@ export default $config({
       },
     });
 
+    if ($app.stage === "dev") {
+      const accountId = process.env.CLOUDFLARE_DEFAULT_ACCOUNT_ID!;
+      const zone = cloudflare.getZoneOutput({
+        filter: {
+          account: { id: accountId },
+          name: "opencode.ai",
+        },
+      });
+
+      new cloudflare.WorkersCustomDomain("OpenCodeDomain", {
+        accountId,
+        environment: "production",
+        hostname: "models.opencode.ai",
+        service: worker.nodes.worker.scriptName,
+        zoneId: zone.id,
+      });
+    }
+
     return {
       url: worker.url,
     };
