@@ -18,13 +18,8 @@ export default $config({
 
     const worker = new sst.cloudflare.Worker("Server", {
       url: true,
-      domain:
-        $app.stage === "dev"
-          ? {
-              name: "models.dev",
-              aliases: ["models.opencode.ai"],
-            }
-          : undefined,
+      // SST 3.17.x only accepts domain as a string (object/aliases need a newer SST).
+      domain: $app.stage === "dev" ? "models.dev" : undefined,
       link: [
         new sst.Secret("PosthogToken"),
         new sst.Secret("LakeUrl"),
@@ -40,6 +35,18 @@ export default $config({
         },
       },
     });
+
+    // Alias hostname on a different zone; use zoneName so CF provider 6 does not
+    // require a separate getZone lookup (filter-based zoneId was undefined).
+    if ($app.stage === "dev") {
+      new cloudflare.WorkersCustomDomain("OpenCodeDomain", {
+        accountId: process.env.CLOUDFLARE_DEFAULT_ACCOUNT_ID!,
+        environment: "production",
+        hostname: "models.opencode.ai",
+        service: worker.nodes.worker.scriptName,
+        zoneName: "opencode.ai",
+      });
+    }
 
     return {
       url: worker.url,
