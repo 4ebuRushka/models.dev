@@ -17,6 +17,7 @@ The grouped sync targets are available for local convenience, but CI syncs each 
 - `bun models:sync digitalocean` syncs only DigitalOcean.
 - `bun models:sync xai` syncs only xAI.
 - `bun models:sync kilo` syncs only Kilo.
+- `bun models:sync merge-gateway` syncs only Merge Gateway.
 - `bun models:sync openai` syncs only OpenAI catalog availability.
 - `bun models:sync aggregators --dry-run` prints changes without writing model files.
 - `bun models:sync aggregators --new-only` creates new model files but skips updates and removals.
@@ -161,6 +162,17 @@ Kilo Gateway is implemented in `packages/core/src/sync/providers/kilo.ts`.
 - Existing `status`, `interleaved`, `knowledge`, `limit.input`, and `cost.tiers` may be preserved when Kilo is not authoritative enough for those fields.
 - Canonical Kilo model IDs should emit `base_model` references to model metadata when a matching `models/` entry exists.
 - `reasoning_options` is derived from `opencode.variants` when present.
+
+## Merge Gateway Notes
+
+Merge Gateway is implemented in `packages/core/src/sync/providers/merge-gateway.ts`.
+
+- Source endpoint: `https://api-gateway.merge.dev/v1/models`.
+- Required auth: `MERGE_GATEWAY_API_KEY`.
+- The sync follows `next_cursor` until every page has been fetched.
+- The canonical provider's available vendor route supplies pricing, limits, and capabilities. When it is unavailable, the sync matches Gateway's default resolver by selecting the active route with the lowest combined input and output price; the API's CMS-priority order breaks ties.
+- Canonical model IDs emit `base_model` references to model metadata when a matching `models/` entry exists.
+- Local models missing from the response are retained because API-key policy can affect catalog visibility.
 
 ## Cloudflare Workers AI Notes
 

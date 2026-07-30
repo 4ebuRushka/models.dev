@@ -19,6 +19,7 @@ import { hyper } from "./providers/hyper.js";
 import { huggingface } from "./providers/huggingface.js";
 import { kilo } from "./providers/kilo.js";
 import { llmgateway } from "./providers/llmgateway.js";
+import { mergeGateway } from "./providers/merge-gateway.js";
 import { nanoGpt } from "./providers/nano-gpt.js";
 import { openai } from "./providers/openai.js";
 import { openrouter } from "./providers/openrouter.js";
@@ -121,6 +122,7 @@ export const providers: {
   huggingface: SyncProvider<any>;
   kilo: SyncProvider<any>;
   llmgateway: SyncProvider<any>;
+  "merge-gateway": SyncProvider<any>;
   "nano-gpt": SyncProvider<any>;
   openai: SyncProvider<any>;
   openrouter: SyncProvider<any>;
@@ -145,6 +147,7 @@ export const providers: {
   huggingface,
   kilo,
   llmgateway,
+  "merge-gateway": mergeGateway,
   "nano-gpt": nanoGpt,
   openai,
   openrouter,
@@ -157,7 +160,17 @@ export const providers: {
 };
 
 export const groups = {
-  aggregators: ["crossmodel", "empiriolabs", "huggingface", "kilo", "llmgateway", "nano-gpt", "openrouter", "vercel"],
+  aggregators: [
+    "crossmodel",
+    "empiriolabs",
+    "huggingface",
+    "kilo",
+    "llmgateway",
+    "merge-gateway",
+    "nano-gpt",
+    "openrouter",
+    "vercel",
+  ],
   cloudflare: ["cloudflare-workers-ai"],
   direct: ["ambient", "anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "hyper", "openai", "ovhcloud", "pioneer", "venice", "wandb", "xai"],
 } as const;

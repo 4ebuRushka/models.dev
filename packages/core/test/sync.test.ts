@@ -34,6 +34,14 @@ import {
 } from "../src/sync/providers/openrouter.js";
 import { buildLLMGatewayModel, type LLMGatewayModel } from "../src/sync/providers/llmgateway.js";
 import {
+  buildMergeGatewayModel,
+  fetchMergeGatewayModels,
+  mergeGateway,
+  MergeGatewayResponse,
+  selectMergeGatewayVendor,
+  type MergeGatewayModel,
+} from "../src/sync/providers/merge-gateway.js";
+import {
   buildNanoGptModel,
   nanoGpt,
   NanoGptResponse,
@@ -1495,6 +1503,23 @@ test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
   expect("release_date" in model).toBe(false);
 });
 
+// Ensures Merge Gateway namespaces reuse the matching canonical model metadata.
+test("resolves Merge Gateway provider aliases to canonical metadata", () => {
+  expect([
+    resolveCanonicalBaseModel("moonshot/kimi-k2.5"),
+    resolveCanonicalBaseModel("moonshot/kimi-k2.6"),
+    resolveCanonicalBaseModel("moonshot/kimi-k2.7-code"),
+    resolveCanonicalBaseModel("moonshot/kimi-k2.7-code-highspeed"),
+    resolveCanonicalBaseModel("sakana/fugu-ultra"),
+  ]).toEqual([
+    "moonshotai/kimi-k2.5",
+    "moonshotai/kimi-k2.6",
+    "moonshotai/kimi-k2.7-code",
+    "moonshotai/kimi-k2.7-code-highspeed",
+    "sakana/fugu-ultra",
+  ]);
+});
+
 test("resolves Venice Pro routes to canonical OpenAI metadata", () => {
   expect([
     resolveVeniceBaseModel("openai-gpt-56-luna-pro", "GPT-5.6 Luna Pro"),
@@ -1631,6 +1656,376 @@ test("factors aliased LLM Gateway routes against canonical metadata", () => {
       context: 1_024_000,
     },
   });
+});
+
+// Ensures catalog pagination preserves authentication and returns every page.
+test("fetches every page of the Merge Gateway catalog", async () => {
+  const requests: string[] = [];
+  const authorizations: string[] = [];
+  const fetcher = ((input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    requests.push(url);
+    authorizations.push(new Headers(init?.headers).get("Authorization") ?? "");
+    const next = url.includes("cursor=next-page");
+    return Promise.resolve(new Response(JSON.stringify({
+      object: "list",
+      data: [mergeGatewayModel({
+        model: next ? "openai/gpt-5.6-terra" : "openai/gpt-5.6-sol",
+        display_name: next ? "GPT-5.6 Terra" : "GPT-5.6 Sol",
+      })],
+      has_more: !next,
+      next_cursor: next ? null : "next-page",
+    })));
+  }) as typeof fetch;
+
+  const result = await fetchMergeGatewayModels(fetcher, "test-key");
+
+  expect(result.data.map((model) => model.model)).toEqual([
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+  ]);
+  expect(requests).toHaveLength(2);
+  expect(requests[0]).toContain("limit=500");
+  expect(requests[1]).toContain("cursor=next-page");
+  expect(authorizations).toEqual(["Bearer test-key", "Bearer test-key"]);
+});
+
+// Prevents pagination overlap from publishing the same model ID twice.
+test("rejects duplicate Merge Gateway model IDs across pages", async () => {
+  const fetcher = ((input: string | URL | Request) => {
+    const next = String(input).includes("cursor=next-page");
+    return Promise.resolve(new Response(JSON.stringify({
+      object: "list",
+      data: [mergeGatewayModel()],
+      has_more: !next,
+      next_cursor: next ? null : "next-page",
+    })));
+  }) as typeof fetch;
+
+  expect(fetchMergeGatewayModels(fetcher, "test-key")).rejects.toThrow(
+    "Merge Gateway returned duplicate model ID: openai/gpt-5.6-sol",
+  );
+});
+
+// Rejects API records whose provider disagrees with the model ID namespace.
+test("rejects Merge Gateway provider and model namespace mismatches", () => {
+  expect(() => MergeGatewayResponse.parse({
+    object: "list",
+    data: [mergeGatewayModel({ provider: "anthropic" })],
+    has_more: false,
+    next_cursor: null,
+  })).toThrow("Model namespace openai does not match provider anthropic");
+});
+
+// Keeps audio-capable records valid when the API advertises audio input.
+test("accepts audio modalities from the Merge Gateway catalog", () => {
+  const model = mergeGatewayModel();
+  model.vendors.openai.capabilities.input.push("audio");
+
+  expect(MergeGatewayResponse.parse({
+    object: "list",
+    data: [model],
+    has_more: false,
+    next_cursor: null,
+  }).data[0]?.vendors.openai.capabilities.input).toContain("audio");
+});
+
+// Emits only route-specific overrides when canonical metadata already matches.
+test("factors Merge Gateway GPT-5.6 Sol against canonical metadata", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel(), undefined);
+
+  expect(model).toEqual({
+    base_model: "openai/gpt-5.6-sol",
+    cost: {
+      input: 5,
+      output: 30,
+    },
+  });
+});
+
+// Protects curated reasoning metadata from an unreliable negative API signal.
+test("preserves curated reasoning when Merge Gateway routes report supports_reasoning = false", () => {
+  // `supports_reasoning = false` is a positive-only signal: the field is
+  // undocumented in the public schema and inconsistently populated across
+  // vendor routes, so it must not erase curated reasoning metadata.
+  const vendor = mergeGatewayVendor();
+  vendor.capabilities.supports_reasoning = false;
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: { openai: vendor },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    reasoning: true,
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+    cost: { input: 5, output: 30 },
+  });
+
+  expect(model).toMatchObject({
+    base_model: "openai/gpt-5.6-sol",
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+  });
+  expect(model).not.toMatchObject({ reasoning: false });
+});
+
+// Treats a positive signal from any available route as model-level confirmation.
+test("confirms reasoning when any available Merge Gateway route reports supports_reasoning = true", () => {
+  const selected = mergeGatewayVendor();
+  selected.capabilities.supports_reasoning = false;
+  const confirming = mergeGatewayVendor({
+    pricing: { currency: "USD", input_per_million: 9, output_per_million: 45 },
+  });
+  confirming.capabilities.supports_reasoning = true;
+  confirming.capabilities.reasoning = {
+    configurable: false,
+    disable_supported: false,
+    default_enabled: true,
+    controls: [],
+    output_style: "reasoning_content",
+  };
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: { openai: selected, fireworks: confirming },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    cost: { input: 5, output: 30 },
+  });
+
+  // The model reasons on the gateway with no verified caller control.
+  expect(model).toMatchObject({ reasoning_options: [] });
+  expect(model).not.toMatchObject({ reasoning: false });
+});
+
+// Publishes a toggle only when the selected route explicitly supports disabling reasoning.
+test("derives a Merge Gateway reasoning toggle when the selected route supports disabling", () => {
+  const selected = mergeGatewayVendor();
+  selected.capabilities.reasoning = {
+    configurable: true,
+    disable_supported: true,
+    default_enabled: true,
+    controls: ["thinking"],
+    output_style: "reasoning_content",
+  };
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: { openai: selected },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    reasoning: true,
+    reasoning_options: [],
+    cost: { input: 5, output: 30 },
+  });
+
+  expect(model).toMatchObject({ reasoning_options: [{ type: "toggle" }] });
+});
+
+// Prevents deprecated routes from contributing capabilities to an available model.
+test("ignores supports_reasoning = true on unavailable Merge Gateway routes", () => {
+  const selected = mergeGatewayVendor();
+  selected.capabilities.supports_reasoning = false;
+  const deprecated = mergeGatewayVendor({ availability_status: "deprecated" });
+  deprecated.capabilities.supports_reasoning = true;
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: { openai: selected, legacy: deprecated },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    cost: { input: 5, output: 30 },
+  });
+
+  expect(model).not.toHaveProperty("reasoning_options");
+});
+
+// Updates API-provided cache prices without discarding curated cache fields.
+test("merges authoritative Merge Gateway cache pricing field by field", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: {
+      openai: mergeGatewayVendor({
+        pricing: {
+          currency: "USD",
+          input_per_million: 3.75,
+          output_per_million: 22.5,
+        },
+        prompt_caching: {
+          mode: "automatic",
+          cache_read_cost_per_million: 0.375,
+        },
+      }),
+    },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    cost: {
+      input: 5,
+      output: 30,
+      cache_read: 0.5,
+      cache_write: 6.25,
+    },
+  });
+
+  expect(model).toEqual({
+    base_model: "openai/gpt-5.6-sol",
+    cost: {
+      input: 3.75,
+      output: 22.5,
+      cache_read: 0.375,
+      cache_write: 6.25,
+    },
+  });
+});
+
+// Retains curated cache prices when the API confirms caching but omits prices.
+test("preserves Merge Gateway cache pricing when prompt caching exposes only its mode", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: {
+      openai: mergeGatewayVendor({
+        prompt_caching: { mode: "automatic" },
+      }),
+    },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    cost: {
+      input: 5,
+      output: 30,
+      cache_read: 0.5,
+      cache_write: 6.25,
+    },
+  });
+
+  expect(model).toMatchObject({
+    cost: {
+      cache_read: 0.5,
+      cache_write: 6.25,
+    },
+  });
+});
+
+// Removes inherited cache prices when the selected route explicitly disables caching.
+test("removes Merge Gateway cache pricing when prompt caching mode is none", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    vendors: {
+      openai: mergeGatewayVendor({
+        prompt_caching: { mode: "none" },
+      }),
+    },
+  }), {
+    base_model: "openai/gpt-5.6-sol",
+    cost: {
+      input: 5,
+      output: 30,
+      cache_read: 0.5,
+      cache_write: 6.25,
+    },
+  });
+
+  expect(model).toMatchObject({
+    cost: { input: 5, output: 30 },
+  });
+  expect(model.cost).not.toHaveProperty("cache_read");
+  expect(model.cost).not.toHaveProperty("cache_write");
+});
+
+// Avoids overriding a curated name with a display value that is effectively an ID.
+test("inherits canonical names for ID-shaped Merge Gateway display names", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    model: "minimax/minimax-m2",
+    provider: "minimax",
+    display_name: "MiniMaxAI/MiniMax-M2",
+    vendors: { minimax: mergeGatewayVendor() },
+  }), undefined);
+
+  expect(model).not.toHaveProperty("name");
+});
+
+// Avoids overriding a curated name with an unformatted model slug.
+test("inherits canonical names for slug-shaped Merge Gateway display names", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    model: "openai/gpt-oss-safeguard-120b",
+    display_name: "gpt-oss-safeguard-120b",
+    vendors: { openai: mergeGatewayVendor() },
+  }), undefined);
+
+  expect(model).not.toHaveProperty("name");
+});
+
+// Removes a canonical input limit that exceeds the selected route's context window.
+test("omits inherited input limits above the Merge Gateway context", () => {
+  const model = buildMergeGatewayModel(mergeGatewayModel({
+    model: "openai/gpt-5-chat-latest",
+    display_name: "GPT-5 Chat Latest",
+    vendors: {
+      openai: mergeGatewayVendor({
+        context_window: 128_000,
+        max_output_tokens: 16_384,
+      }),
+    },
+  }), {
+    base_model: "openai/gpt-5-chat-latest",
+    limit: {
+      context: 128_000,
+      input: 272_000,
+      output: 16_384,
+    },
+  }, {
+    base_model: "openai/gpt-5-chat-latest",
+    limit: {
+      context: 128_000,
+      output: 16_384,
+    },
+  });
+
+  expect(model).toHaveProperty("base_model_omit", ["limit.input"]);
+});
+
+// Prefers the model provider's own route over alternate vendors.
+test("uses the canonical Merge Gateway vendor as the catalog baseline", () => {
+  const model = mergeGatewayModel({
+    vendors: {
+      azure: mergeGatewayVendor({ context_window: 200_000 }),
+      openai: mergeGatewayVendor({ context_window: 1_050_000 }),
+    },
+  });
+
+  expect(selectMergeGatewayVendor(model)).toMatchObject({
+    id: "openai",
+    info: { context_window: 1_050_000 },
+  });
+});
+
+// Falls back to the lowest-cost available route when the canonical vendor is absent.
+test("uses Merge Gateway's cheapest fallback route when no canonical route exists", () => {
+  const model = mergeGatewayModel({
+    provider: "qwen",
+    vendors: {
+      bedrock: mergeGatewayVendor({
+        pricing: { currency: "USD", input_per_million: 0.15, output_per_million: 0.6 },
+      }),
+      alibaba: mergeGatewayVendor({
+        pricing: { currency: "USD", input_per_million: 0.287, output_per_million: 0.64 },
+      }),
+    },
+  });
+
+  expect(selectMergeGatewayVendor(model)).toMatchObject({
+    id: "bedrock",
+    info: { pricing: { input_per_million: 0.15, output_per_million: 0.6 } },
+  });
+});
+
+// Keeps API insertion order deterministic when fallback routes have equal prices.
+test("uses Merge Gateway's CMS order to break equal-cost fallback ties", () => {
+  const model = mergeGatewayModel({
+    provider: "qwen",
+    vendors: {
+      empiriolabs: mergeGatewayVendor({
+        pricing: { currency: "USD", input_per_million: 0.4, output_per_million: 1.6 },
+      }),
+      fireworks: mergeGatewayVendor({
+        pricing: { currency: "USD", input_per_million: 0.4, output_per_million: 1.6 },
+      }),
+    },
+  });
+
+  expect(selectMergeGatewayVendor(model)).toMatchObject({ id: "empiriolabs" });
+});
+
+// Prevents a scoped API response from deleting catalog entries it cannot see.
+test("retains Merge Gateway models missing from an API-key-scoped response", () => {
+  expect(mergeGateway.deleteMissing).toBe(false);
 });
 
 test("parses Vercel pricing tiers with an implicit zero minimum", () => {
@@ -1950,6 +2345,44 @@ function llmGatewayModel(overrides: Partial<LLMGatewayModel> = {}): LLMGatewayMo
     context_length: 1_000_000,
     supported_parameters: ["temperature", "max_tokens", "top_p", "effort", "reasoning"],
     structured_outputs: true,
+    ...overrides,
+  };
+}
+
+function mergeGatewayVendor(
+  overrides: Partial<MergeGatewayModel["vendors"][string]> = {},
+): MergeGatewayModel["vendors"][string] {
+  return {
+    launch_date: "2026-07-09",
+    context_window: 1_050_000,
+    max_output_tokens: 128_000,
+    availability_status: "available",
+    capabilities: {
+      input: ["text", "image", "document"],
+      output: ["text", "tool_use"],
+      supports_tool_calling: true,
+      supports_tool_choice: true,
+      supports_structured_outputs: true,
+      streaming: true,
+    },
+    pricing: {
+      currency: "USD",
+      input_per_million: 5,
+      output_per_million: 30,
+    },
+    ...overrides,
+  };
+}
+
+function mergeGatewayModel(overrides: Partial<MergeGatewayModel> = {}): MergeGatewayModel {
+  return {
+    model: "openai/gpt-5.6-sol",
+    provider: "openai",
+    display_name: "GPT-5.6 Sol",
+    vendors: { openai: mergeGatewayVendor() },
+    availability_status: "available",
+    created_at: "2026-07-09T00:00:00Z",
+    updated_at: "2026-07-09T00:00:00Z",
     ...overrides,
   };
 }
