@@ -18,7 +18,7 @@ export default $config({
 
     const worker = new sst.cloudflare.Worker("Server", {
       url: true,
-      domain: $app.stage === "dev" ? "models.dev" : undefined,
+      domain: $app.stage === "dev" ? "models.opencode.ai" : undefined,
       link: [
         new sst.Secret("PosthogToken"),
         new sst.Secret("LakeUrl"),
@@ -34,23 +34,6 @@ export default $config({
         },
       },
     });
-
-    if ($app.stage === "dev") {
-      const zone = cloudflare.getZoneOutput({
-        filter: {
-          account: { id: process.env.CLOUDFLARE_DEFAULT_ACCOUNT_ID! },
-          name: "opencode.ai",
-        },
-      });
-
-      new cloudflare.WorkersCustomDomain("OpenCodeDomain", {
-        accountId: process.env.CLOUDFLARE_DEFAULT_ACCOUNT_ID!,
-        environment: "production",
-        hostname: "models.opencode.ai",
-        service: worker.nodes.worker.scriptName,
-        zoneId: zone.zoneId,
-      });
-    }
 
     return {
       url: worker.url,
