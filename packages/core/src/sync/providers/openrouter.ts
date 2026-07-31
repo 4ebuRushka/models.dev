@@ -65,6 +65,13 @@ export const OpenRouterModel = z.object({
     internal_reasoning: z.string().optional(),
     input_cache_read: z.string().optional(),
     input_cache_write: z.string().optional(),
+    overrides: z.array(z.object({
+      min_prompt_tokens: z.number(),
+      prompt: z.string().optional(),
+      completion: z.string().optional(),
+      input_cache_read: z.string().optional(),
+      input_cache_write: z.string().optional(),
+    }).passthrough()).optional(),
   }),
   top_provider: z.object({
     context_length: z.number().nullable(),
@@ -145,6 +152,24 @@ function price(value: string | undefined) {
     : undefined;
 }
 
+function costTiers(model: OpenRouterModel, existing: ExistingModel | undefined) {
+  const tiers = (model.pricing.overrides ?? [])
+    .flatMap((o) => {
+      const input = price(o.prompt);
+      const output = price(o.completion);
+      if (input === undefined || output === undefined) return [];
+      return [{
+        tier: { type: "context" as const, size: o.min_prompt_tokens },
+        input,
+        output,
+        cache_read: price(o.input_cache_read),
+        cache_write: price(o.input_cache_write),
+      }];
+    })
+    .sort((a, b) => a.tier.size - b.tier.size);
+  return tiers.length > 0 ? tiers : existing?.cost?.tiers;
+}
+
 type Modality = "text" | "audio" | "image" | "video" | "pdf";
 
 function modalities(values: string[], fallback: Modality[]): Modality[] {
@@ -207,7 +232,7 @@ export function buildOpenRouterModel(
         reasoning: reasoning ? price(model.pricing.internal_reasoning) : undefined,
         cache_read: price(model.pricing.input_cache_read),
         cache_write: price(model.pricing.input_cache_write),
-        tiers: existing?.cost?.tiers,
+        tiers: costTiers(model, existing),
       }
     : existing?.cost;
   const limit = {
