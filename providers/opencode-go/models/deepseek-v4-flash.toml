@@ -1,3 +1,5 @@
+# DeepSeek V4 Flash supports the stateless OpenAI Responses API.
+# https://api-docs.deepseek.com/guides/responses_api (accessed 2026-08-01)
 base_model = "deepseek/deepseek-v4-flash"
 name = "DeepSeek V4 Flash (New)"
 
@@ -12,3 +14,6 @@ field = "reasoning_content"
 input = 0.14
 output = 0.28
 cache_read = 0.0028
+
+[provider]
+shape = "responses"
