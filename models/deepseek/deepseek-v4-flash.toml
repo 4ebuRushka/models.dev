@@ -1,8 +1,12 @@
+# DeepSeek-V4-Flash-0731 official API (public beta): same architecture as preview, re-post-trained.
+# https://api-docs.deepseek.com/updates (2026-07-31)
+# https://api-docs.deepseek.com/quick_start/pricing/
+# https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731
 name = "DeepSeek V4 Flash"
 description = "Fast DeepSeek V4 lane for economical reasoning, coding, and long-context work"
 family = "deepseek-flash"
 release_date = "2026-04-24"
-last_updated = "2026-04-24"
+last_updated = "2026-07-31"
 attachment = false
 reasoning = true
 temperature = true
@@ -21,10 +25,29 @@ output = ["text"]
 
 [[weights]]
 label = "Hugging Face"
-url = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash"
+url = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731"
 
 [[benchmarks]]
-name = "SWE-Bench Verified"
-score = 79
-metric = "resolved"
-source = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash"
+name = "Terminal-Bench"
+score = 82.7
+metric = "pass@1"
+version = "2.1"
+source = "https://api-docs.deepseek.com/updates"
+
+[[benchmarks]]
+name = "Toolathlon"
+score = 70.3
+metric = "verified"
+source = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731"
+
+[[benchmarks]]
+name = "NL2Repo"
+score = 54.2
+metric = "score"
+source = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731"
+
+[[benchmarks]]
+name = "DeepSWE"
+score = 54.4
+metric = "score"
+source = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731"
