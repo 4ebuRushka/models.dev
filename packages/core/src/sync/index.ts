@@ -818,7 +818,9 @@ function formatInteger(n: number) {
 }
 
 function formatNumber(n: number) {
-  return Number.isInteger(n) ? formatInteger(n) : String(n);
+  if (Number.isInteger(n)) return formatInteger(n);
+  const normalized = Number(n.toPrecision(15));
+  return String(normalized);
 }
 
 function formatKey(value: string) {

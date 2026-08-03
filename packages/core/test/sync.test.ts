@@ -1908,6 +1908,21 @@ test("formats interleaved as a root field before reasoning option tables", () =>
   });
 });
 
+test("formats prices without floating-point noise", () => {
+  const content = formatToml({
+    cost: {
+      input: 0.14,
+      output: 0.28,
+      cache_read: 0.14 * 0.1,
+    },
+  });
+
+  expect(content).toContain("cache_read = 0.014");
+  expect(Bun.TOML.parse(content)).toMatchObject({
+    cost: { input: 0.14, output: 0.28, cache_read: 0.014 },
+  });
+});
+
 test("formats empty reasoning options outside the interleaved table", () => {
   const content = formatToml({
     id: "example/model",
