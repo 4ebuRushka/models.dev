@@ -1,3 +1,6 @@
+# Toggle: chat_template_kwargs.enable_thinking = true|false
+# Effort: reasoning_effort = low|medium|high
+# https://developers.cloudflare.com/workers-ai/models/kimi-k2.7-code/ (accessed 2026-08-03)
 base_model = "moonshotai/kimi-k2.7-code"
 temperature = true
 
@@ -9,8 +12,8 @@ type = "effort"
 values = ["low", "medium", "high"]
 
 [cost]
-input = 0.6
-output = 3
+input = 0.95
+output = 4
 cache_read = 0.19
 
 [modalities]

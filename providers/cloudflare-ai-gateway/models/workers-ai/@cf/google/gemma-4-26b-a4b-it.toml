@@ -1,3 +1,6 @@
+# Toggle: chat_template_kwargs.enable_thinking = true|false
+# Effort: reasoning_effort = low|medium|high
+# https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/ (accessed 2026-08-03)
 base_model = "google/gemma-4-26b-a4b-it"
 
 interleaved = true
@@ -10,8 +13,8 @@ type = "effort"
 values = ["low", "medium", "high"]
 
 [cost]
-input = 0.6
-output = 3
+input = 0.1
+output = 0.3
 
 [limit]
 context = 256_000
