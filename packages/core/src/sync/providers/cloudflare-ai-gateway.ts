@@ -263,6 +263,7 @@ function buildNewModel(model: CloudflareAiGatewayModel): SyncedModel | undefined
   };
 
   const values: Partial<SyncedFullModel> = {
+    name: source?.name,
     cost: mergedCost,
     reasoning_options: source?.reasoning_options,
     interleaved: source?.interleaved,
