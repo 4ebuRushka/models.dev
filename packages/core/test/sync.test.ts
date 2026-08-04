@@ -10,10 +10,6 @@ import {
   parseAnthropicPricing,
   type AnthropicModel,
 } from "../src/sync/providers/anthropic.js";
-import {
-  isManagedModel as isManagedCloudflareAiGatewayModel,
-  shouldAutoCreate as shouldAutoCreateCloudflareAiGatewayModel,
-} from "../src/sync/providers/cloudflare-ai-gateway.js";
 import { buildDeepInfraModel, type DeepInfraModel } from "../src/sync/providers/deepinfra.js";
 import {
   buildDigitalOceanModel,
@@ -60,22 +56,6 @@ import { resolveVeniceBaseModel } from "../src/sync/providers/venice.js";
 import { buildVercelModel, vercel } from "../src/sync/providers/vercel.js";
 import { buildWandbModel, type WandbModel } from "../src/sync/providers/wandb.js";
 import { buildXAIModel } from "../src/sync/providers/xai.js";
-
-test("Cloudflare AI Gateway sync excludes duplicate backend routes", () => {
-  const model = (id: string) => ({ id });
-
-  expect(isManagedCloudflareAiGatewayModel(model("anthropic/claude-opus-4-6"))).toBe(true);
-  expect(isManagedCloudflareAiGatewayModel(model("workers-ai/@cf/openai/gpt-oss-120b"))).toBe(true);
-  expect(isManagedCloudflareAiGatewayModel(model("aws-bedrock/us.anthropic.claude-opus-4-6-v1:0"))).toBe(false);
-  expect(isManagedCloudflareAiGatewayModel(model("google-vertex-ai/anthropic/claude-opus-4-6"))).toBe(false);
-  expect(isManagedCloudflareAiGatewayModel(model("openrouter/anthropic/claude-opus-4.6"))).toBe(false);
-});
-
-test("Cloudflare AI Gateway sync creates only canonical model aliases", () => {
-  expect(shouldAutoCreateCloudflareAiGatewayModel("openai/gpt-5.4-mini")).toBe(true);
-  expect(shouldAutoCreateCloudflareAiGatewayModel("openai/gpt-5.4-2026-03-05")).toBe(false);
-  expect(shouldAutoCreateCloudflareAiGatewayModel("anthropic/claude-opus-4-0")).toBe(false);
-});
 
 function anthropicModel(overrides: Partial<AnthropicModel> = {}): AnthropicModel {
   return {

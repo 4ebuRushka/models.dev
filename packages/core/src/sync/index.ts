@@ -9,7 +9,6 @@ import { ambient } from "./providers/ambient.js";
 import { anthropic } from "./providers/anthropic.js";
 import { baseten } from "./providers/baseten.js";
 import { chutes } from "./providers/chutes.js";
-import { cloudflareAiGateway } from "./providers/cloudflare-ai-gateway.js";
 import { cloudflareWorkersAi } from "./providers/cloudflare-workers-ai.js";
 import { crossmodel } from "./providers/crossmodel.js";
 import { deepinfra } from "./providers/deepinfra.js";
@@ -115,7 +114,6 @@ export const providers: {
   anthropic: SyncProvider<any>;
   baseten: SyncProvider<any>;
   chutes: SyncProvider<any>;
-  "cloudflare-ai-gateway": SyncProvider<any>;
   "cloudflare-workers-ai": SyncProvider<any>;
   crossmodel: SyncProvider<any>;
   deepinfra: SyncProvider<any>;
@@ -143,7 +141,6 @@ export const providers: {
   anthropic,
   baseten,
   chutes,
-  "cloudflare-ai-gateway": cloudflareAiGateway,
   "cloudflare-workers-ai": cloudflareWorkersAi,
   crossmodel,
   deepinfra,
@@ -181,7 +178,7 @@ export const groups = {
     "openrouter",
     "vercel",
   ],
-  cloudflare: ["cloudflare-ai-gateway", "cloudflare-workers-ai"],
+  cloudflare: ["cloudflare-workers-ai"],
   direct: ["ambient", "anthropic", "baseten", "chutes", "deepinfra", "digitalocean", "google", "hyper", "openai", "ovhcloud", "pioneer", "tinfoil", "venice", "wandb", "xai"],
 } as const;
 
