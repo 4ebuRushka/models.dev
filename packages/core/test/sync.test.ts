@@ -10,6 +10,7 @@ import {
   parseAnthropicPricing,
   type AnthropicModel,
 } from "../src/sync/providers/anthropic.js";
+import { buildCortecsModel, type CortecsModel } from "../src/sync/providers/cortecs.js";
 import {
   buildCrossModel,
   type CrossModelModel,
@@ -2135,6 +2136,27 @@ test("defaults new reasoning models to empty reasoning options", () => {
   expect(preserveReasoningOptions({ reasoning: true }, undefined)).toEqual({
     reasoning: true,
     reasoning_options: [],
+  });
+});
+
+test("preserves authored Cortecs reasoning options missing from the API", () => {
+  const model: CortecsModel = {
+    id: "deepseek-v4-flash-0731",
+    created: 1_775_088_000,
+    pricing: { currency: "EUR", input_token: 0.224, output_token: 0.269 },
+    context_size: 1_048_576,
+    input_modalities: ["text"],
+    output_modalities: ["text"],
+    supported_features: ["reasoning", "tools"],
+  };
+  const existing: ExistingModel = {
+    base_model: "deepseek/deepseek-v4-flash-0731",
+    reasoning: true,
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
+  };
+
+  expect(buildCortecsModel(model, existing, existing)).toMatchObject({
+    reasoning_options: [{ type: "effort", values: ["low", "medium", "high"] }],
   });
 });
 
