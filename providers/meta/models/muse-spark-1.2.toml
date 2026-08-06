@@ -1,0 +1,14 @@
+# Sources:
+# https://dev.meta.ai/docs/overview/ (model ID: muse-spark-1.2, standard tier)
+# https://dev.meta.ai/docs/pricing-rate-limits (standard: $1.25 in / $0.15 cache / $4.25 out per 1M)
+# https://dev.meta.ai/docs/features/reasoning (effort: minimal|low|medium|high|xhigh; none unsupported)
+# https://venturebeat.com/orchestration/meta-enters-the-ai-coding-wars-with-muse-spark-1-2-and-muse-code-with-persistent-async-background-agents
+# Effort: reasoning_effort / reasoning.effort = minimal|low|medium|high|xhigh
+base_model = "meta/muse-spark-1.2"
+
+reasoning_options = [{ type = "effort", values = ["minimal", "low", "medium", "high", "xhigh"] }]
+
+[cost]
+input = 1.25
+output = 4.25
+cache_read = 0.15

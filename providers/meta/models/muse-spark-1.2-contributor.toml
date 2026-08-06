@@ -1,0 +1,16 @@
+# Sources:
+# https://dev.meta.ai/docs/overview/ (model ID: muse-spark-1.2-contributor, contributor tier)
+# https://dev.meta.ai/docs/pricing-rate-limits (contributor: $0.10 in / $0.002 cache / $0.20 out per 1M; data used to improve Meta products)
+# https://venturebeat.com/orchestration/meta-enters-the-ai-coding-wars-with-muse-spark-1-2-and-muse-code-with-persistent-async-background-agents
+# https://www.unite.ai/meta-ships-muse-code-coding-agent-with-co-trained-muse-spark-1-2-model/
+# Effort: reasoning_effort / reasoning.effort = minimal|low|medium|high|xhigh
+base_model = "meta/muse-spark-1.2"
+name = "Muse Spark 1.2 Contributor"
+description = "Muse Spark 1.2 on Meta's contributor pricing tier. Same model capabilities as standard muse-spark-1.2; prompts and completions may be used to improve Meta products in exchange for lower rates."
+
+reasoning_options = [{ type = "effort", values = ["minimal", "low", "medium", "high", "xhigh"] }]
+
+[cost]
+input = 0.10
+output = 0.20
+cache_read = 0.002
