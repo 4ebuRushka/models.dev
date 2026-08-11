@@ -2212,6 +2212,7 @@ test("syncs OpenRouter reasoning efforts from model metadata", () => {
   expect(model).toMatchObject({
     base_model: "anthropic/claude-sonnet-5",
     reasoning_options: [
+      { type: "toggle" },
       { type: "effort", values: ["max", "xhigh", "high", "medium", "low"] },
     ],
   });
@@ -2329,6 +2330,7 @@ test("prefers OpenRouter API reasoning options over authored ones", () => {
 
   expect(model).toMatchObject({
     reasoning_options: [
+      { type: "toggle" },
       { type: "effort", values: ["max", "xhigh", "high", "medium", "low"] },
     ],
   });
@@ -2381,6 +2383,7 @@ test("upgrades empty OpenRouter reasoning options from model metadata", () => {
 
   expect(model).toMatchObject({
     reasoning_options: [
+      { type: "toggle" },
       { type: "effort", values: ["high", "medium", "low"] },
     ],
   });
