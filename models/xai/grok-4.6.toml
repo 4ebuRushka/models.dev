@@ -1,6 +1,7 @@
 name = "Grok 4.6"
-description = "xAI's latest Grok for chat, coding, agentic tools, and lower hallucination risk"
+description = "xAI's frontier model for long-running agents, coding, knowledge work, and visual projects"
 family = "grok"
+knowledge = "2026-02-01"
 release_date = "2026-08-12"
 last_updated = "2026-08-12"
 attachment = true
