@@ -9,3 +9,4 @@ cache_read = 0.15
 
 [provider]
 npm = "@ai-sdk/openai"
+body = { store = false, include = ["reasoning.encrypted_content"] }
