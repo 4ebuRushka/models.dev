@@ -4,8 +4,7 @@
 # - https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/reasoning
 # - https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer
 base_model = "nvidia/nemotron-3.5-lightning"
-name = "Nemotron 3.5 Lightning 30B"
-description = "Nemotron model for efficient reasoning, coding, and specialized AI agents"
+name = "Nemotron 3.5 Lightning 30B (Free)"
 
 [[reasoning_options]]
 type = "toggle"
