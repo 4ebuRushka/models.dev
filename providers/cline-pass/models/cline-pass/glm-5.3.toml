@@ -1,0 +1,12 @@
+# Sources (accessed 2026-08-24):
+# https://docs.cline.bot/getting-started/clinepass
+# https://api.cline.bot/api/v1/ai/cline/recommended-models
+# Model ID cline-pass/glm-5.3; reference quota pricing matches GLM-5.2 on ClinePass.
+# reasoning_options: same OpenAI-compatible effort surface as other cline-pass reasoners.
+base_model = "zhipuai/glm-5.3"
+reasoning_options = [{ type = "effort", values = ["none", "low", "medium", "high", "xhigh"] }]
+
+[cost]
+input = 1.4
+output = 4.4
+cache_read = 0.26
