@@ -2910,7 +2910,6 @@ test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
   expect("release_date" in model).toBe(false);
 });
 
-// The gateway renamed its xAI provider to spacexai; canonical metadata stays xai.
 test("resolves SpaceXAI provider IDs to canonical xAI metadata", () => {
   expect(resolveCanonicalBaseModel("spacexai/grok-4.5")).toBe("xai/grok-4.5");
 });
@@ -4218,8 +4217,6 @@ test("Vercel Claude Opus fast variants factor onto base opus metadata", () => {
   expect(synced).not.toHaveProperty("family");
 });
 
-// A sync-stamped empty array means "unknown", not "no controls", so it must
-// not shadow the route base's menu forever (spacexai rename fallout).
 test("Vercel empty existing reasoning_options falls back to the route base menu", () => {
   const [model] = vercel.parseModels({
     data: [{
