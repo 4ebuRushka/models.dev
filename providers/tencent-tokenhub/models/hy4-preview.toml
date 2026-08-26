@@ -1,0 +1,18 @@
+# Per-token USD pricing is not published yet; zeros match other TokenHub plan entries.
+# Toggle: thinking.type = enabled|disabled (default disabled)
+# Effort: reasoning_effort = low|medium|high (default low), same as hy3 / hy3-preview
+# https://cloud.tencent.com/document/product/1823/131208
+base_model = "tencent/hy4-preview"
+
+[[reasoning_options]]
+type = "toggle"
+
+[[reasoning_options]]
+type = "effort"
+values = ["none", "high"]
+
+[cost]
+input = 0
+output = 0
+cache_read = 0
+cache_write = 0
