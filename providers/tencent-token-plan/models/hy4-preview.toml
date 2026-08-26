@@ -1,6 +1,9 @@
-# Per-token USD pricing is not published yet; zeros match other Token Plan entries.
+# China-site list CNY → USD: list_price / tax_rate * FX (accessed 2026-08-26).
+# Source USD/1k tokens: input 0.000834, output 0.002501, cache hit 0.000042.
+# Catalog is USD / million tokens (×1000).
 # Toggle: thinking.type = enabled|disabled (default disabled)
-# Effort: reasoning_effort = low|medium|high (default low), same as hy3 / hy3-preview
+# Effort: reasoning_effort = none|high
+# https://cloud.tencent.com/document/product/1823/130055
 # https://cloud.tencent.com/document/product/1823/131208
 base_model = "tencent/hy4-preview"
 
@@ -12,7 +15,6 @@ type = "effort"
 values = ["none", "high"]
 
 [cost]
-input = 0
-output = 0
-cache_read = 0
-cache_write = 0
+input = 0.834
+output = 2.501
+cache_read = 0.042
