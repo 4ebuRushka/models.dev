@@ -2910,6 +2910,10 @@ test("factors OpenRouter Pro routes against canonical OpenAI metadata", () => {
   expect("release_date" in model).toBe(false);
 });
 
+test("resolves SpaceXAI provider IDs to canonical xAI metadata", () => {
+  expect(resolveCanonicalBaseModel("spacexai/grok-4.5")).toBe("xai/grok-4.5");
+});
+
 // Ensures Merge Gateway namespaces reuse the matching canonical model metadata.
 test("resolves Merge Gateway provider aliases to canonical metadata", () => {
   expect([
@@ -4211,6 +4215,72 @@ test("Vercel Claude Opus fast variants factor onto base opus metadata", () => {
   });
   expect(synced).not.toHaveProperty("description");
   expect(synced).not.toHaveProperty("family");
+});
+
+test("Vercel empty existing reasoning_options falls back to the route base menu", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "minimax/minimax-m2.7-free",
+      name: "MiniMax M2.7 (Free)",
+      created: 1_784_160_000,
+      context_window: 200_000,
+      max_tokens: 128_000,
+      type: "language",
+      tags: ["reasoning", "tool-use"],
+      pricing: { input: "0", output: "0" },
+    }],
+  });
+
+  const translated = vercel.translateModel(model!, {
+    existing(id) {
+      if (id === "minimax/minimax-m2.7-free") return { reasoning_options: [] };
+      if (id === "minimax/minimax-m2.7") {
+        return { reasoning_options: [{ type: "effort", values: ["low", "high"] }] };
+      }
+      return undefined;
+    },
+    authored() {
+      return undefined;
+    },
+  });
+
+  expect(translated?.model).toMatchObject({
+    reasoning_options: [{ type: "effort", values: ["low", "high"] }],
+  });
+});
+
+test("Vercel preserves a non-empty existing reasoning_options over the base menu", () => {
+  const [model] = vercel.parseModels({
+    data: [{
+      id: "minimax/minimax-m2.7-free",
+      name: "MiniMax M2.7 (Free)",
+      created: 1_784_160_000,
+      context_window: 200_000,
+      max_tokens: 128_000,
+      type: "language",
+      tags: ["reasoning", "tool-use"],
+      pricing: { input: "0", output: "0" },
+    }],
+  });
+
+  const translated = vercel.translateModel(model!, {
+    existing(id) {
+      if (id === "minimax/minimax-m2.7-free") {
+        return { reasoning_options: [{ type: "toggle" }] };
+      }
+      if (id === "minimax/minimax-m2.7") {
+        return { reasoning_options: [{ type: "effort", values: ["low", "high"] }] };
+      }
+      return undefined;
+    },
+    authored() {
+      return undefined;
+    },
+  });
+
+  expect(translated?.model).toMatchObject({
+    reasoning_options: [{ type: "toggle" }],
+  });
 });
 
 test("OpenRouter Claude Opus fast variants factor onto base opus metadata", () => {
