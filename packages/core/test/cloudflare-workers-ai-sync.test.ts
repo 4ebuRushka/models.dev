@@ -1,6 +1,7 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 
-import type { ExistingModel } from "../src/sync/index.js";
+import { formatToml, syncProvider, type ExistingModel } from "../src/sync/index.js";
 import { cloudflareWorkersAi } from "../src/sync/providers/cloudflare-workers-ai.js";
 
 // Synthetic metadata exercises the sync contract, not a real model's controls.
@@ -24,6 +25,127 @@ function translate(raw: unknown, existing?: ExistingModel) {
     authored: () => existing,
   }).model;
 }
+
+const inputSchema = {
+  anyOf: [{ oneOf: [{
+    type: "object",
+    properties: {
+      reasoning_effort: { anyOf: [{ type: "string", enum: ["low", "medium", "high"] }, { type: "null" }] },
+      chat_template_kwargs: {
+        type: "object",
+        properties: { enable_thinking: { type: "boolean", default: true } },
+      },
+      max_tokens: { type: "integer", maximum: 16_000 },
+    },
+  }] }],
+};
+
+test("derives effort and toggle controls from the model input schema", () => {
+  const synced = translate({ data: [{ ...model, input_schema: inputSchema }] }, { reasoning_options: [] });
+  expect(synced.reasoning_options).toEqual([
+    { type: "toggle" },
+    { type: "effort", values: ["low", "medium", "high"] },
+  ]);
+
+  const [parsed] = cloudflareWorkersAi.parseModels({ data: [{ ...model, input_schema: inputSchema }] });
+  const translated = cloudflareWorkersAi.translateModel(parsed!, {
+    existing: () => undefined,
+    authored: () => undefined,
+  });
+  expect(translated.header).toContain("chat_template_kwargs.enable_thinking = true|false");
+});
+
+test("reads nested Responses API effort enums without inventing a toggle", () => {
+  const synced = translate({ data: [{ ...model, input_schema: {
+    oneOf: [{ type: "object", properties: { reasoning: {
+      type: "object", properties: { effort: { type: "string", enum: ["low", "high"] } },
+    } } }],
+  } }] });
+  expect(synced.reasoning_options).toEqual([{ type: "effort", values: ["low", "high"] }]);
+});
+
+test("refreshes serialized control comments without losing unrelated notes or resyncing forever", async () => {
+  const directory = await mkdtemp("/tmp/opencode/workers-schema-");
+  const raw = { data: [{ ...model, input_schema: inputSchema }] };
+  const file = `${directory}/${model.id}.toml`;
+  try {
+    await mkdir(`${directory}/@cf/example`, { recursive: true });
+    await Bun.write(file, "# Context limit verified separately.\n# Toggle: thinking.type = enabled|disabled\n# Effort: reasoning_effort = high|max\n" + formatToml({ id: model.id, ...translate(raw) }));
+    const provider = { ...cloudflareWorkersAi, modelsDir: directory, fetchModels: async () => raw };
+    expect((await syncProvider(provider)).updated).toBe(1);
+    const written = await Bun.file(file).text();
+    expect(written).toContain("# Context limit verified separately.");
+    expect(written).toContain("# Toggle: chat_template_kwargs.enable_thinking = true|false");
+    expect(written).toContain("# Effort: reasoning_effort = low|medium|high");
+    expect(written).not.toContain("thinking.type");
+    expect(written).not.toContain("high|max");
+    expect((await syncProvider(provider)).updated).toBe(0);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("schema effort none replaces a separate toggle", () => {
+  const synced = translate({ data: [{ ...model, input_schema: { properties: {
+    reasoning_effort: { type: "string", enum: ["none", "low", "high"] },
+    chat_template_kwargs: { properties: { enable_thinking: { type: "boolean" } } },
+  } } }] });
+  expect(synced.reasoning_options).toEqual([{ type: "effort", values: ["none", "low", "high"] }]);
+});
+
+test.each([
+  {},
+  { properties: { reasoning_effort: { type: "string" }, max_tokens: { type: "integer", maximum: 1000 } } },
+  { properties: { reasoning_effort: { enum: [null, "unsupported"] } } },
+  { properties: { chat_template_kwargs: { properties: { enable_thinking: { type: "boolean", const: true } } } } },
+])("preserves curated options when schema has no usable controls: %j", (schema) => {
+  const options = [{ type: "effort", values: ["high", "max"] }] satisfies ExistingModel["reasoning_options"];
+  expect(translate({ data: [{ ...model, input_schema: schema }] }, { reasoning_options: options }).reasoning_options).toEqual(options);
+});
+
+test("does not infer reasoning capability from generic schema fields", () => {
+  const synced = translate({ data: [{ ...model, supported_parameters: ["tools"], input_schema: inputSchema }] });
+  expect(synced.reasoning).toBe(false);
+  expect(synced.reasoning_options).toBeUndefined();
+});
+
+test.each([
+  { name: "success", status: 200, body: { success: true, result: { input: inputSchema } } },
+  { name: "HTTP failure", status: 403, body: {} },
+  { name: "API failure", status: 200, body: { success: false } },
+  { name: "missing input schema", status: 200, body: { success: true, result: {} } },
+])("fetches each model schema and fails closed on $name", async ({ status, body }) => {
+  const account = process.env.CLOUDFLARE_WORKERS_AI_SYNC_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN;
+  process.env.CLOUDFLARE_WORKERS_AI_SYNC_ACCOUNT_ID = "test-account";
+  process.env.CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN = "test-token";
+  const requested: string[] = [];
+  const fetch = spyOn(globalThis, "fetch").mockImplementation((async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/search")) {
+      return Response.json({ data: [model, { ...model, id: "@cf/example/other" }] });
+    }
+    requested.push(url.searchParams.get("model")!);
+    return Response.json(body, { status });
+  }) as typeof globalThis.fetch);
+  try {
+    if (status !== 200 || !("result" in body) || !body.result || !("input" in body.result)) {
+      await expect(cloudflareWorkersAi.fetchModels()).rejects.toThrow();
+      return;
+    }
+    const raw = await cloudflareWorkersAi.fetchModels();
+    expect(requested.toSorted()).toEqual(["@cf/example/other", model.id]);
+    expect(translate(raw).reasoning_options).toEqual([
+      { type: "toggle" }, { type: "effort", values: ["low", "medium", "high"] },
+    ]);
+  } finally {
+    fetch.mockRestore();
+    if (account === undefined) delete process.env.CLOUDFLARE_WORKERS_AI_SYNC_ACCOUNT_ID;
+    else process.env.CLOUDFLARE_WORKERS_AI_SYNC_ACCOUNT_ID = account;
+    if (token === undefined) delete process.env.CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN;
+    else process.env.CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN = token;
+  }
+});
 
 test.each([
   ["direct", (value: unknown) => ({ data: [value] })],

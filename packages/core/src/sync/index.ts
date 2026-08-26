@@ -83,6 +83,8 @@ export interface SyncProvider<SourceModel> {
   preserveBaseModels?: boolean;
   preserveDescriptions?: boolean;
   sameModel?(current: ExistingModel, desired: SyncedModel): boolean;
+  /** Refresh provider-owned comments while preserving unrelated authored notes. */
+  updateHeader?(current: string, generated: string): string;
   missingNotice?(paths: string[]): string[];
   /**
    * Remote ID to report when translateModel skips a source model. Return
@@ -315,9 +317,13 @@ export async function syncProvider<SourceModel>(
       throw parsed.error;
     }
 
+    const currentHeader = existing.get(relativePath)?.header ?? "";
+    const header = translated.header && provider.updateHeader
+      ? provider.updateHeader(currentHeader, translated.header)
+      : currentHeader || translated.header || "";
     desired.set(relativePath, {
       model: parsed.data,
-      content: ((existing.get(relativePath)?.header || translated.header) ?? "") + formatToml(parsed.data),
+      content: header + formatToml(parsed.data),
     });
   }
 
@@ -388,7 +394,8 @@ export async function syncProvider<SourceModel>(
       continue;
     }
 
-    if (!(provider.sameModel?.(current.authored, file.model) ?? sameModel(relativePath, current.authored, file.model))) {
+    if ((provider.updateHeader && current.header !== leadingComments(file.content)) ||
+      !(provider.sameModel?.(current.authored, file.model) ?? sameModel(relativePath, current.authored, file.model))) {
       if (options.newOnly) {
         unchanged++;
         continue;
