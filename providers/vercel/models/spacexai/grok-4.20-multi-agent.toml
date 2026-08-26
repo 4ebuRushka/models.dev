@@ -7,9 +7,7 @@ attachment = true
 reasoning = true
 tool_call = true
 open_weights = false
-[[reasoning_options]]
-type = "effort"
-values = ["low", "medium", "high", "xhigh"]
+reasoning_options = []
 
 [cost]
 input = 1.25
