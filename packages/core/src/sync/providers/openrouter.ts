@@ -44,6 +44,7 @@ const CANONICAL_PROVIDER_PREFIXES = {
   thinkingmachines: { provider: "thinkingmachines", metadata: "thinkingmachines" },
   "x-ai": { provider: "xai", metadata: "xai" },
   xai: { provider: "xai", metadata: "xai" },
+  spacexai: { provider: "xai", metadata: "xai" },
   xiaomi: { provider: "xiaomi", metadata: "xiaomi" },
   zai: { provider: "zai", metadata: "zhipuai" },
   "z-ai": { provider: "zai", metadata: "zhipuai" },
