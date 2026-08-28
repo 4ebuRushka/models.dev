@@ -7,7 +7,7 @@ attachment = false
 reasoning = true
 temperature = true
 tool_call = true
-open_weights = false
+open_weights = true
 
 [limit]
 context = 1_024_000
@@ -16,3 +16,7 @@ output = 64_000
 [modalities]
 input = ["text"]
 output = ["text"]
+
+[[weights]]
+label = "Hugging Face"
+url = "https://huggingface.co/tencent/Hy4-preview"
