@@ -16,7 +16,3 @@ output = 64_000
 [modalities]
 input = ["text"]
 output = ["text"]
-
-[[weights]]
-label = "Hugging Face"
-url = "https://huggingface.co/tencent/Hy4-preview"
