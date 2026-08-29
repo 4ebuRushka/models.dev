@@ -1,7 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <path d="M12 5.2V7M12 3.8a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM7.8 8.2A2.2 2.2 0 0 1 10 6h4a2.2 2.2 0 0 1 2.2 2.2v7.6A2.2 2.2 0 0 1 14 18H10a2.2 2.2 0 0 1-2.2-2.2V8.2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <ellipse cx="9.5" cy="11.5" rx="1" ry="1.3" fill="currentColor"/>
-  <ellipse cx="14.5" cy="11.5" rx="1" ry="1.3" fill="currentColor"/>
-  <rect x="9" y="14" width="6" height="1.4" rx="0.5" fill="currentColor"/>
-  <path d="M5.8 11.2H7M17 11.2h1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <path d="
+    M 238,170 
+    L 238,126 
+    A 20 20 0 1 1 262,126 
+    L 262,170 
+    L 335,170 
+    A 35 35 0 0 1 370,205 
+    L 370,225 
+    A 12 12 0 0 1 382,237 
+    L 382,263 
+    A 12 12 0 0 1 370,275 
+    L 370,315 
+    A 35 35 0 0 1 335,350 
+    L 165,350 
+    A 35 35 0 0 1 130,315 
+    L 130,275 
+    A 12 12 0 0 1 118,263 
+    L 118,237 
+    A 12 12 0 0 1 130,225 
+    L 130,205 
+    A 35 35 0 0 1 165,170 
+    Z" 
+    fill="none" 
+    stroke="currentColor" 
+    stroke-width="12" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+  />
+  <circle cx="202" cy="242" r="21" fill="currentColor" />
+  <circle cx="298" cy="242" r="21" fill="currentColor" />
+  <rect x="205" y="288" width="90" height="26" rx="13" fill="currentColor" />
 </svg>
