@@ -1,0 +1,11 @@
+name = "Bothub"
+env = ["BOTHUB_API_KEY"]
+npm = "@ai-sdk/openai-compatible"
+# Raw HTTP reasoning controls (accessed 2026-08-29):
+# Chat POST `/v1/chat/completions` accepts `reasoning_effort =
+# none|low|medium|high|max` for reasoning-capable models; free tier
+# endpoints respond with the upstream reasoning interleaved in the
+# message payload.
+# https://bothub.ru
+api = "https://openai.bothub.ru/v1"
+doc = "https://bothub.ru/models"
