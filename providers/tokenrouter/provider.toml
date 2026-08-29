@@ -1,0 +1,10 @@
+name = "TokenRouter"
+env = ["TOKENROUTER_API_KEY"]
+npm = "@ai-sdk/openai-compatible"
+# Raw HTTP reasoning controls (accessed 2026-08-29):
+# Chat POST `/v1/chat/completions` accepts `reasoning_effort =
+# none|low|medium|high|max` for reasoning-capable models; free tier
+# models return upstream reasoning in `reasoning_content`.
+# https://www.tokenrouter.com
+api = "https://api.tokenrouter.com/v1"
+doc = "https://www.tokenrouter.com/docs/tokenrouter-feature-guide/"
