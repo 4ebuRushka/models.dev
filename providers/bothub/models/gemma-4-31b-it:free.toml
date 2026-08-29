@@ -1,12 +1,11 @@
+# Bothub wire: reasoning in message.reasoning (also mirrored in message.reasoning_details as reasoning.text)
 base_model = "google/gemma-4-31b-it"
 name = "Gemma 4 31B IT (free)"
 
-[interleaved]
-field = "reasoning_details"
+interleaved = true
 
 [[reasoning_options]]
-type = "effort"
-values = ["none", "low", "medium", "high"]
+type = "toggle"
 
 [cost]
 input = 0
