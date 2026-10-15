@@ -1,0 +1,7 @@
+# Source: https://api.orcarouter.ai/api/pricing (orca/orcaverify-text1.0-free, is_free_tier=true, free_base_model=orca/orcaverify-text1.0)
+base_model = "orca/orcaverify-text1.0"
+name = "OrcaVerify Text 1.0 (free)"
+
+[cost]
+input = 0
+output = 0
