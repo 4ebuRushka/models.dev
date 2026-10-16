@@ -1,0 +1,30 @@
+# NIM Chat schema (accessed 2026-10-16): reasoning runs on every turn and cannot be
+# disabled — `chat_template_kwargs.enable_thinking` is const true and there is no
+# reasoning_effort field, so the caller has no control (hence empty reasoning_options).
+# Text plus up to eight images per request; video and audio inputs are unsupported.
+# max_tokens max 1,048,576; prompt + output must fit the 1,048,576-token context window.
+# https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer
+#
+# Pricing: hosted on NVIDIA's API trial tier and currently free — no separate list
+# rate is published for this ID. Source: this model's catalog card,
+# https://build.nvidia.com/stepfun-ai/step-5-preview (governed by the
+# NVIDIA API Trial Terms of Service).
+base_model = "stepfun/step-5-preview"
+
+reasoning_options = []
+structured_output = false
+temperature = true
+
+[interleaved]
+field = "reasoning_content"
+
+[cost]
+input = 0.0
+output = 0.0
+
+[limit]
+context = 1_048_576
+output = 1_048_576
+
+[modalities]
+input = ["text", "image"]
